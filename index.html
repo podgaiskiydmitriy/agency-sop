@@ -1,0 +1,923 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Операционная карта — Агентство</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Unbounded:wght@300;400;500&family=JetBrains+Mono:wght@300;400&display=swap');
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --bg:    #0c0c0c;
+  --bg2:   #141414;
+  --bg3:   #1a1a1a;
+  --bg4:   #222222;
+  --bg5:   #2a2a2a;
+  --line:  rgba(255,255,255,0.06);
+  --line2: rgba(255,255,255,0.11);
+  --line3: rgba(255,255,255,0.18);
+  --text:  #ddd9d3;
+  --muted: #7a7773;
+  --faint: #3a3836;
+  --b0: #a78bfa; --b0d: rgba(167,139,250,0.12);
+  --b1: #34d399; --b1d: rgba(52,211,153,0.12);
+  --b2: #fbbf24; --b2d: rgba(251,191,36,0.12);
+  --b3: #f87171; --b3d: rgba(248,113,113,0.12);
+  --edit-accent: #60a5fa;
+}
+
+html { background: var(--bg); color: var(--text); font-family: 'JetBrains Mono', monospace; font-size: 13px; line-height: 1.65; }
+body { max-width: 860px; margin: 0 auto; padding: 0 0 100px; }
+
+/* ── PASSWORD SCREEN ── */
+#lock-screen {
+  position: fixed; inset: 0; background: var(--bg);
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  z-index: 1000; gap: 24px;
+}
+.lock-logo { font-family: 'Unbounded', sans-serif; font-size: 11px; font-weight: 300; letter-spacing: 0.25em; color: var(--muted); text-transform: uppercase; }
+.lock-title { font-family: 'Unbounded', sans-serif; font-size: 20px; font-weight: 400; color: var(--text); }
+.lock-form { display: flex; gap: 0; border: 1px solid var(--line3); border-radius: 8px; overflow: hidden; }
+.lock-input {
+  background: var(--bg3); border: none; color: var(--text);
+  font-family: 'JetBrains Mono', monospace; font-size: 14px;
+  padding: 12px 16px; width: 220px; outline: none; letter-spacing: 0.1em;
+}
+.lock-input::placeholder { color: var(--faint); }
+.lock-btn {
+  background: var(--bg4); border: none; border-left: 1px solid var(--line3);
+  color: var(--muted); font-family: 'JetBrains Mono', monospace; font-size: 12px;
+  padding: 12px 18px; cursor: pointer; transition: all 0.15s;
+}
+.lock-btn:hover { background: var(--bg5); color: var(--text); }
+.lock-error { font-size: 11px; color: var(--b3); opacity: 0; transition: opacity 0.2s; }
+.lock-error.show { opacity: 1; }
+.lock-hint { font-size: 11px; color: var(--faint); }
+
+/* ── MAIN APP (hidden until unlocked) ── */
+#app { display: none; }
+
+/* ── HEADER ── */
+.hdr {
+  padding: 40px 32px 32px;
+  border-bottom: 1px solid var(--line);
+  display: flex; align-items: flex-start; justify-content: space-between; gap: 20px;
+}
+.hdr-left {}
+.hdr-eyebrow { font-size: 10px; font-weight: 300; letter-spacing: 0.22em; color: var(--muted); text-transform: uppercase; margin-bottom: 10px; }
+.hdr-title { font-family: 'Unbounded', sans-serif; font-size: 20px; font-weight: 400; color: var(--text); }
+.hdr-sub { font-size: 11px; color: var(--muted); margin-top: 6px; letter-spacing: 0.05em; }
+
+/* ── TOOLBAR ── */
+.toolbar {
+  display: flex; gap: 8px; align-items: center; flex-shrink: 0; flex-wrap: wrap; justify-content: flex-end;
+}
+.btn {
+  font-family: 'JetBrains Mono', monospace; font-size: 11px; letter-spacing: 0.05em;
+  padding: 7px 14px; border-radius: 6px; border: 1px solid var(--line2);
+  background: var(--bg3); color: var(--muted); cursor: pointer; transition: all 0.15s;
+  white-space: nowrap;
+}
+.btn:hover { background: var(--bg4); color: var(--text); border-color: var(--line3); }
+.btn.primary { background: var(--bg4); color: var(--edit-accent); border-color: rgba(96,165,250,0.3); }
+.btn.primary:hover { background: rgba(96,165,250,0.1); color: #93c5fd; }
+.btn.save { background: rgba(52,211,153,0.1); color: var(--b1); border-color: rgba(52,211,153,0.3); display: none; }
+.btn.save:hover { background: rgba(52,211,153,0.2); }
+.edit-mode .btn.save { display: inline-block; }
+.edit-mode .btn.edit-toggle { background: rgba(96,165,250,0.1); color: #93c5fd; border-color: rgba(96,165,250,0.4); }
+
+/* ── LEGEND ── */
+.legend { display: flex; gap: 18px; flex-wrap: wrap; padding: 16px 32px; border-bottom: 1px solid var(--line); }
+.legend-item { display: flex; align-items: center; gap: 6px; font-size: 10px; color: var(--muted); letter-spacing: 0.08em; }
+.ldot { width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; }
+
+/* ── TREE ── */
+.tree { padding: 24px 32px; display: flex; flex-direction: column; gap: 8px; }
+
+/* ── BLOCK ── */
+.block { border: 1px solid var(--line); border-radius: 10px; overflow: hidden; transition: border-color 0.2s; }
+.block.open { border-color: var(--line2); }
+.block-head {
+  display: flex; align-items: center; gap: 14px; padding: 15px 18px;
+  cursor: pointer; background: var(--bg2); transition: background 0.15s; user-select: none;
+}
+.block-head:hover { background: var(--bg3); }
+.block.open .block-head { background: var(--bg3); }
+.block-num {
+  font-family: 'Unbounded', sans-serif; font-size: 10px; font-weight: 500;
+  width: 28px; height: 28px; border-radius: 6px;
+  display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+}
+.block-title { font-family: 'Unbounded', sans-serif; font-size: 11px; font-weight: 400; flex: 1; }
+.block-meta { font-size: 10px; color: var(--muted); }
+.block-arrow { color: var(--faint); font-size: 9px; transition: transform 0.25s; flex-shrink: 0; }
+.block.open .block-arrow { transform: rotate(90deg); }
+.block-body { display: none; border-top: 1px solid var(--line); }
+.block.open .block-body { display: block; }
+
+/* Block colors */
+.b0 .block-num { background: var(--b0d); color: var(--b0); }
+.b0 .block-title { color: var(--b0); }
+.b0.open { border-color: rgba(167,139,250,0.2); }
+.b1 .block-num { background: var(--b1d); color: var(--b1); }
+.b1 .block-title { color: var(--b1); }
+.b1.open { border-color: rgba(52,211,153,0.2); }
+.b2 .block-num { background: var(--b2d); color: var(--b2); }
+.b2 .block-title { color: var(--b2); }
+.b2.open { border-color: rgba(251,191,36,0.2); }
+.b3 .block-num { background: var(--b3d); color: var(--b3); }
+.b3 .block-title { color: var(--b3); }
+.b3.open { border-color: rgba(248,113,113,0.2); }
+
+/* ── PROCESS FLOW ── */
+.flow-wrap {
+  padding: 20px 20px 4px;
+  border-bottom: 1px solid var(--line);
+  background: var(--bg2);
+}
+.flow-label { font-size: 9px; letter-spacing: 0.18em; color: var(--faint); text-transform: uppercase; margin-bottom: 14px; }
+.flow { display: flex; align-items: stretch; gap: 0; overflow-x: auto; padding-bottom: 16px; }
+.flow::-webkit-scrollbar { height: 3px; }
+.flow::-webkit-scrollbar-track { background: var(--bg3); }
+.flow::-webkit-scrollbar-thumb { background: var(--faint); border-radius: 2px; }
+
+.fnode {
+  display: flex; flex-direction: column; align-items: center; gap: 6px;
+  min-width: 110px; max-width: 130px; flex-shrink: 0; position: relative;
+}
+.fnode-box {
+  width: 100%; border-radius: 7px; border: 1px solid var(--line2);
+  background: var(--bg3); padding: 10px 10px 9px;
+  text-align: center; transition: border-color 0.15s;
+}
+.fnode:hover .fnode-box { border-color: var(--line3); }
+.fnode-icon { font-size: 14px; margin-bottom: 4px; }
+.fnode-title { font-size: 10px; font-weight: 400; color: var(--text); line-height: 1.4; }
+.fnode-sub { font-size: 9px; color: var(--muted); margin-top: 3px; line-height: 1.35; }
+.fnode-result { font-size: 9px; color: var(--b1); margin-top: 2px; }
+
+.farrow {
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0; width: 28px; color: var(--faint); font-size: 12px;
+  align-self: center; margin-top: -14px;
+}
+.fbranch { display: flex; flex-direction: column; gap: 4px; align-self: center; margin-top: -14px; }
+.fbranch-yes { font-size: 8px; color: var(--b1); letter-spacing: 0.08em; }
+.fbranch-no { font-size: 8px; color: var(--b3); letter-spacing: 0.08em; }
+
+.fnode.decision .fnode-box {
+  background: var(--bg4); border-style: dashed;
+  clip-path: none;
+}
+.fnode.start .fnode-box { border-color: rgba(167,139,250,0.3); background: rgba(167,139,250,0.06); }
+.fnode.end .fnode-box { border-color: rgba(52,211,153,0.3); background: rgba(52,211,153,0.06); }
+.fnode.warn .fnode-box { border-color: rgba(248,113,113,0.3); background: rgba(248,113,113,0.06); }
+
+/* ── SECTION ── */
+.section { border-bottom: 1px solid var(--line); }
+.section:last-child { border-bottom: none; }
+.section-head {
+  display: flex; align-items: center; gap: 10px;
+  padding: 12px 18px 12px 54px; cursor: pointer;
+  background: var(--bg2); transition: background 0.15s; user-select: none;
+}
+.section-head:hover { background: var(--bg3); }
+.section.open .section-head { background: var(--bg3); }
+.section-idx { font-size: 10px; color: var(--faint); font-family: 'Unbounded', sans-serif; font-weight: 300; width: 26px; flex-shrink: 0; }
+.section-title { font-size: 12px; color: var(--text); flex: 1; }
+.section-role {
+  font-size: 9px; color: var(--muted); border: 1px solid var(--line2);
+  border-radius: 20px; padding: 2px 9px; flex-shrink: 0; white-space: nowrap; letter-spacing: 0.05em;
+}
+.role-kd { color: var(--b0); border-color: rgba(167,139,250,0.25); }
+.role-tm { color: var(--b1); border-color: rgba(52,211,153,0.25); }
+.role-both { color: var(--b2); border-color: rgba(251,191,36,0.25); }
+.role-all { color: var(--b3); border-color: rgba(248,113,113,0.25); }
+.section-arrow { font-size: 8px; color: var(--faint); transition: transform 0.2s; flex-shrink: 0; }
+.section.open .section-arrow { transform: rotate(180deg); }
+.section-body { display: none; padding: 0 18px 16px 54px; background: var(--bg2); }
+.section.open .section-body { display: block; }
+
+/* ── REGLAMENT ── */
+.reglament {
+  font-size: 12px; color: #a8a5a0; line-height: 1.8;
+  padding: 14px 0 10px; border-top: 1px solid var(--line);
+}
+.reglament p { margin-bottom: 8px; }
+.reglament p:last-child { margin-bottom: 0; }
+
+/* ── SUBS ── */
+.subs { margin-top: 10px; display: flex; flex-direction: column; gap: 4px; }
+.sub-head {
+  display: flex; align-items: flex-start; gap: 10px; padding: 9px 12px;
+  border-radius: 6px; background: var(--bg3); border: 1px solid transparent;
+  cursor: pointer; transition: all 0.15s;
+}
+.sub-head:hover { border-color: var(--line2); }
+.sub.open .sub-head { border-color: var(--line2); background: var(--bg4); }
+.sub-bullet { width: 4px; height: 4px; border-radius: 50%; background: var(--faint); margin-top: 5px; flex-shrink: 0; }
+.sub-title { font-size: 11px; color: var(--text); flex: 1; }
+.sub-arrow { font-size: 8px; color: var(--faint); transition: transform 0.2s; margin-top: 2px; flex-shrink: 0; }
+.sub.open .sub-arrow { transform: rotate(180deg); }
+.sub-body { display: none; padding: 8px 12px 2px 24px; }
+.sub.open .sub-body { display: block; }
+.sub-text { font-size: 11px; color: var(--muted); line-height: 1.75; }
+.stop { color: var(--b3); font-weight: 500; }
+
+/* ── EDIT MODE ── */
+.edit-mode [contenteditable] {
+  outline: none;
+  background: rgba(96,165,250,0.05);
+  border-radius: 3px;
+  box-shadow: inset 0 0 0 1px rgba(96,165,250,0.2);
+  padding: 1px 3px; margin: -1px -3px;
+  cursor: text;
+  transition: box-shadow 0.15s;
+}
+.edit-mode [contenteditable]:focus {
+  box-shadow: inset 0 0 0 1px rgba(96,165,250,0.5);
+  background: rgba(96,165,250,0.08);
+}
+.edit-badge {
+  display: none; position: fixed; bottom: 24px; right: 24px;
+  background: rgba(96,165,250,0.12); border: 1px solid rgba(96,165,250,0.3);
+  color: var(--edit-accent); font-size: 10px; letter-spacing: 0.1em;
+  padding: 8px 14px; border-radius: 20px; pointer-events: none;
+}
+.edit-mode .edit-badge { display: block; }
+
+/* ── CONTROLS BAR ── */
+.controls { padding: 12px 32px 0; display: flex; justify-content: space-between; align-items: center; }
+.controls-left { font-size: 10px; color: var(--faint); }
+</style>
+</head>
+<body>
+
+<!-- PASSWORD SCREEN -->
+<div id="lock-screen">
+  <div class="lock-logo">Концертное агентство</div>
+  <div class="lock-title">Операционная карта</div>
+  <div class="lock-form">
+    <input class="lock-input" type="password" id="lock-input" placeholder="введите пароль" autocomplete="off">
+    <button class="lock-btn" onclick="checkPassword()">войти</button>
+  </div>
+  <div class="lock-error" id="lock-error">неверный пароль</div>
+  <div class="lock-hint">для демо: пароль «1234»</div>
+</div>
+
+<!-- MAIN APP -->
+<div id="app">
+
+  <div class="hdr">
+    <div class="hdr-left">
+      <div class="hdr-eyebrow">Концертное агентство · SOP</div>
+      <div class="hdr-title">Карта процессов</div>
+      <div class="hdr-sub">Жизненный цикл мероприятия · от заявки до закрытия</div>
+    </div>
+    <div class="toolbar">
+      <button class="btn" onclick="toggleAll()">развернуть все</button>
+      <button class="btn primary edit-toggle" onclick="toggleEdit()">✎ режим редактора</button>
+      <button class="btn save" onclick="saveFile()">↓ сохранить файл</button>
+    </div>
+  </div>
+
+  <div class="legend">
+    <div class="legend-item"><span class="ldot" style="background:#a78bfa"></span>концертный директор</div>
+    <div class="legend-item"><span class="ldot" style="background:#34d399"></span>тур-менеджер</div>
+    <div class="legend-item"><span class="ldot" style="background:#fbbf24"></span>кд + тм совместно</div>
+    <div class="legend-item"><span class="ldot" style="background:#f87171"></span>все роли</div>
+    <div class="legend-item"><span class="ldot" style="background:#60a5fa"></span>охрана / тех. персонал</div>
+  </div>
+
+  <div class="controls">
+    <div class="controls-left">нажмите на блок чтобы раскрыть</div>
+    <div></div>
+  </div>
+
+  <div class="tree" id="tree">
+
+    <!-- ══════════════════════════════════════ БЛОК 0 -->
+    <div class="block b0" id="block-0">
+      <div class="block-head" onclick="toggleBlock('block-0')">
+        <div class="block-num">0</div>
+        <div class="block-title" contenteditable="false">Подготовка сделки</div>
+        <div class="block-meta">от заявки до предоплаты</div>
+        <div class="block-arrow">▶</div>
+      </div>
+      <div class="block-body">
+
+        <!-- PROCESS FLOW -->
+        <div class="flow-wrap">
+          <div class="flow-label">схема процесса</div>
+          <div class="flow">
+
+            <div class="fnode start">
+              <div class="fnode-box">
+                <div class="fnode-icon">📥</div>
+                <div class="fnode-title">Входящая заявка</div>
+                <div class="fnode-sub">через официальный канал</div>
+              </div>
+            </div>
+
+            <div class="farrow">→</div>
+
+            <div class="fnode decision">
+              <div class="fnode-box">
+                <div class="fnode-icon">🔍</div>
+                <div class="fnode-title">Квалификация</div>
+                <div class="fnode-sub">бюджет, дата, формат</div>
+              </div>
+            </div>
+
+            <div class="farrow" style="flex-direction:column;gap:2px;">
+              <span style="font-size:8px;color:var(--b1)">ДА →</span>
+              <span style="font-size:8px;color:var(--b3)">НЕТ ✕</span>
+            </div>
+
+            <div class="fnode">
+              <div class="fnode-box">
+                <div class="fnode-icon">💬</div>
+                <div class="fnode-title">Переговоры</div>
+                <div class="fnode-sub">гонорар, условия, состав, дата</div>
+              </div>
+            </div>
+
+            <div class="farrow">→</div>
+
+            <div class="fnode">
+              <div class="fnode-box">
+                <div class="fnode-icon">📋</div>
+                <div class="fnode-title">Согласование с артистом</div>
+                <div class="fnode-sub">финальное одобрение условий</div>
+              </div>
+            </div>
+
+            <div class="farrow">→</div>
+
+            <div class="fnode">
+              <div class="fnode-box">
+                <div class="fnode-icon">✍️</div>
+                <div class="fnode-title">Договор + райдеры</div>
+                <div class="fnode-sub">подписание двух сторон</div>
+              </div>
+            </div>
+
+            <div class="farrow">→</div>
+
+            <div class="fnode">
+              <div class="fnode-box">
+                <div class="fnode-icon">💳</div>
+                <div class="fnode-title">Предоплата</div>
+                <div class="fnode-sub">поступление на счёт</div>
+              </div>
+            </div>
+
+            <div class="farrow">→</div>
+
+            <div class="fnode end">
+              <div class="fnode-box">
+                <div class="fnode-icon">📅</div>
+                <div class="fnode-title">Бронь даты</div>
+                <div class="fnode-sub">бриф → тур-менеджеру</div>
+                <div class="fnode-result">→ Блок 1</div>
+              </div>
+            </div>
+
+          </div>
+        </div>
+
+        <!-- SECTIONS -->
+        <div class="section" id="s-0-1">
+          <div class="section-head" onclick="toggleSection('s-0-1')">
+            <div class="section-idx">0.1</div>
+            <div class="section-title" contenteditable="false">Приём заявки и квалификация</div>
+            <div class="section-role role-kd">конц. директор</div>
+            <div class="section-arrow">▼</div>
+          </div>
+          <div class="section-body">
+            <div class="reglament">
+              <p contenteditable="false">Все запросы — только через официальные каналы агентства. Артист переадресует прямые обращения КД. Срок реакции — не позднее 24 часов. Даже если решение ещё не принято — подтвердить получение.</p>
+            </div>
+            <div class="subs">
+              <div class="sub" id="sub-0-1-1">
+                <div class="sub-head" onclick="toggleSub('sub-0-1-1')">
+                  <div class="sub-bullet"></div>
+                  <div class="sub-title" contenteditable="false">Что выяснить при первом контакте</div>
+                  <div class="sub-arrow">▼</div>
+                </div>
+                <div class="sub-body">
+                  <div class="sub-text" contenteditable="false">По заказчику: кто обращается (организатор или посредник), откуда знает контакты агентства, какие мероприятия проводил ранее.<br><br>По мероприятию: формат (концерт / клабшоу / корпоратив / фестиваль), город, дата, площадка, ожидаемое количество зрителей.<br><br>По бюджету: хотя бы вилка. Если заказчик категорически отказывается называть бюджет — сигнал для осторожности.</div>
+                </div>
+              </div>
+              <div class="sub" id="sub-0-1-2">
+                <div class="sub-head" onclick="toggleSub('sub-0-1-2')">
+                  <div class="sub-bullet"></div>
+                  <div class="sub-title" contenteditable="false">Стоп-сигналы → вежливый отказ</div>
+                  <div class="sub-arrow">▼</div>
+                </div>
+                <div class="sub-body">
+                  <div class="sub-text" contenteditable="false"><span class="stop">✕</span> Заказчик не раскрывает бюджет вообще<br><span class="stop">✕</span> Дата менее 14 дней от текущей<br><span class="stop">✕</span> Формат противоречит текущей политике артиста<br><span class="stop">✕</span> Площадка или страна под ограничениями</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="section" id="s-0-2">
+          <div class="section-head" onclick="toggleSection('s-0-2')">
+            <div class="section-idx">0.2</div>
+            <div class="section-title" contenteditable="false">Переговоры и согласование условий</div>
+            <div class="section-role role-kd">конц. директор</div>
+            <div class="section-arrow">▼</div>
+          </div>
+          <div class="section-body">
+            <div class="reglament">
+              <p contenteditable="false">Главный переговорный этап, 2–7 дней. Все принципиальные договорённости — только письменно. Устные договорённости не являются основанием для начала подготовки. КД руководствуется принципом наилучшего предложения для артиста.</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="section" id="s-0-3">
+          <div class="section-head" onclick="toggleSection('s-0-3')">
+            <div class="section-idx">0.3</div>
+            <div class="section-title" contenteditable="false">Договор и предоплата</div>
+            <div class="section-role role-kd">конц. директор</div>
+            <div class="section-arrow">▼</div>
+          </div>
+          <div class="section-body">
+            <div class="reglament">
+              <p contenteditable="false">Договор направляется заказчику не позднее 48 часов после финального согласования. Оба райдера — неотъемлемые приложения к договору. Поступление предоплаты — единственный триггер перехода в Блок 1. До этого дата не считается забронированной.</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="section" id="s-0-4">
+          <div class="section-head" onclick="toggleSection('s-0-4')">
+            <div class="section-idx">0.4</div>
+            <div class="section-title" contenteditable="false">Фиксация и передача тур-менеджеру</div>
+            <div class="section-role role-both">КД → ТМ</div>
+            <div class="section-arrow">▼</div>
+          </div>
+          <div class="section-body">
+            <div class="reglament">
+              <p contenteditable="false">В день поступления предоплаты: дата вносится в мастер-расписание, создаётся папка мероприятия, тур-менеджер получает передаточный бриф. С момента отправки брифа операционная ответственность переходит к ТМ.</p>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- ══════════════════════════════════════ БЛОК 1 -->
+    <div class="block b1" id="block-1">
+      <div class="block-head" onclick="toggleBlock('block-1')">
+        <div class="block-num">1</div>
+        <div class="block-title" contenteditable="false">Pre-show</div>
+        <div class="block-meta">от получения брифа до дня выезда</div>
+        <div class="block-arrow">▶</div>
+      </div>
+      <div class="block-body">
+
+        <div class="flow-wrap">
+          <div class="flow-label">схема процесса</div>
+          <div class="flow">
+
+            <div class="fnode start">
+              <div class="fnode-box">
+                <div class="fnode-icon">📨</div>
+                <div class="fnode-title">Бриф от КД</div>
+                <div class="fnode-sub">предоплата получена</div>
+              </div>
+            </div>
+
+            <div class="farrow">→</div>
+
+            <div class="fnode">
+              <div class="fnode-box">
+                <div class="fnode-icon">✈️</div>
+                <div class="fnode-title">Логистика</div>
+                <div class="fnode-sub">авиа, отель, трансферы</div>
+              </div>
+            </div>
+
+            <div class="farrow">→</div>
+
+            <div class="fnode">
+              <div class="fnode-box">
+                <div class="fnode-icon">📄</div>
+                <div class="fnode-title">Райдеры</div>
+                <div class="fnode-sub">контроль исполнения</div>
+              </div>
+            </div>
+
+            <div class="farrow">→</div>
+
+            <div class="fnode">
+              <div class="fnode-box">
+                <div class="fnode-icon">👥</div>
+                <div class="fnode-title">Команда</div>
+                <div class="fnode-sub">состав, брифинг, роли</div>
+              </div>
+            </div>
+
+            <div class="farrow">→</div>
+
+            <div class="fnode">
+              <div class="fnode-box">
+                <div class="fnode-icon">🎟</div>
+                <div class="fnode-title">Документы</div>
+                <div class="fnode-sub">акреды, гости, пресса</div>
+              </div>
+            </div>
+
+            <div class="farrow">→</div>
+
+            <div class="fnode decision">
+              <div class="fnode-box">
+                <div class="fnode-icon">✅</div>
+                <div class="fnode-title">Всё закрыто?</div>
+                <div class="fnode-sub">финальная сверка за 24 ч</div>
+              </div>
+            </div>
+
+            <div class="farrow" style="flex-direction:column;gap:2px;">
+              <span style="font-size:8px;color:var(--b1)">ДА →</span>
+              <span style="font-size:8px;color:var(--b3)">НЕТ ↺</span>
+            </div>
+
+            <div class="fnode end">
+              <div class="fnode-box">
+                <div class="fnode-icon">🚀</div>
+                <div class="fnode-title">Финальный бриф</div>
+                <div class="fnode-sub">рассылка команде</div>
+                <div class="fnode-result">→ Блок 2</div>
+              </div>
+            </div>
+
+          </div>
+        </div>
+
+        <div class="section" id="s-1-1">
+          <div class="section-head" onclick="toggleSection('s-1-1')">
+            <div class="section-idx">1.1</div>
+            <div class="section-title" contenteditable="false">Авиа и наземная логистика</div>
+            <div class="section-role role-tm">тур-менеджер</div>
+            <div class="section-arrow">▼</div>
+          </div>
+          <div class="section-body">
+            <div class="reglament">
+              <p contenteditable="false">Бронируется сразу после получения брифа — не ждать напоминания. Имена строго по загранпаспортам. Финансовая ответственность за пропущенный рейс и опоздание лежит на ТМ. «Со мной никто не связался» — недопустимая позиция.</p>
+            </div>
+            <div class="subs">
+              <div class="sub" id="sub-1-1-1">
+                <div class="sub-head" onclick="toggleSub('sub-1-1-1')">
+                  <div class="sub-bullet"></div>
+                  <div class="sub-title" contenteditable="false">Перелёты</div>
+                  <div class="sub-arrow">▼</div>
+                </div>
+                <div class="sub-body">
+                  <div class="sub-text" contenteditable="false">Имена строго по загранпаспортам — скриншот каждого билета в TG. Доп. багаж, Sky Priority / Fast Track — оплачены и подтверждены. Бонусные карты внесены в билеты. ТМ не уходит, пока последний участник не зашёл в зону вылета.</div>
+                </div>
+              </div>
+              <div class="sub" id="sub-1-1-2">
+                <div class="sub-head" onclick="toggleSub('sub-1-1-2')">
+                  <div class="sub-bullet"></div>
+                  <div class="sub-title" contenteditable="false">Наземный транспорт</div>
+                  <div class="sub-arrow">▼</div>
+                </div>
+                <div class="sub-body">
+                  <div class="sub-text" contenteditable="false">Машины премиум-класса. В салоне: вода «Святой Источник» без газа + Cola Zero без сахара — проверить лично. Кондиционер настроен до посадки. Водители предупреждаются лично, не через организаторов. Технический персонал — отдельная машина, выезжают раньше коллектива.</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="section" id="s-1-2">
+          <div class="section-head" onclick="toggleSection('s-1-2')">
+            <div class="section-idx">1.2</div>
+            <div class="section-title" contenteditable="false">Отель — подготовка до приезда</div>
+            <div class="section-role role-tm">тур-менеджер</div>
+            <div class="section-arrow">▼</div>
+          </div>
+          <div class="section-body">
+            <div class="reglament">
+              <p contenteditable="false">За неделю до приезда — подтверждение брони. Ключ-карты готовы до приезда — получение через очередь на стойке недопустимо. Из номера фронтмена убираются все «комплименты» от отеля.</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="section" id="s-1-3">
+          <div class="section-head" onclick="toggleSection('s-1-3')">
+            <div class="section-idx">1.3</div>
+            <div class="section-title" contenteditable="false">Контроль исполнения райдеров</div>
+            <div class="section-role role-tm">тур-менеджер</div>
+            <div class="section-arrow">▼</div>
+          </div>
+          <div class="section-body">
+            <div class="reglament">
+              <p contenteditable="false">ТМ несёт полную личную ответственность за бытовой райдер. По техническому и световому — надзорно-организационная: контролирует, фиксирует, докладывает КД. Самостоятельно технику не исправляет. Не доверяй словам организатора — всё проверяется лично.</p>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- ══════════════════════════════════════ БЛОК 2 -->
+    <div class="block b2" id="block-2">
+      <div class="block-head" onclick="toggleBlock('block-2')">
+        <div class="block-num">2</div>
+        <div class="block-title" contenteditable="false">Day of show</div>
+        <div class="block-meta">прибытие → шоу → выезд</div>
+        <div class="block-arrow">▶</div>
+      </div>
+      <div class="block-body">
+
+        <div class="flow-wrap">
+          <div class="flow-label">схема процесса</div>
+          <div class="flow">
+
+            <div class="fnode start">
+              <div class="fnode-box">
+                <div class="fnode-icon">🌅</div>
+                <div class="fnode-title">Подъём команды</div>
+                <div class="fnode-sub">ТМ будит лично каждого</div>
+              </div>
+            </div>
+
+            <div class="farrow">→</div>
+
+            <div class="fnode">
+              <div class="fnode-box">
+                <div class="fnode-icon">🚗</div>
+                <div class="fnode-title">Выезд техников</div>
+                <div class="fnode-sub">раньше коллектива</div>
+              </div>
+            </div>
+
+            <div class="farrow">→</div>
+
+            <div class="fnode">
+              <div class="fnode-box">
+                <div class="fnode-icon">🏟</div>
+                <div class="fnode-title">Приём площадки</div>
+                <div class="fnode-sub">ТМ прибывает первым</div>
+              </div>
+            </div>
+
+            <div class="farrow">→</div>
+
+            <div class="fnode decision">
+              <div class="fnode-box">
+                <div class="fnode-icon">⚠️</div>
+                <div class="fnode-title">Все условия выполнены?</div>
+                <div class="fnode-sub">ковролин, барьеры, скорая</div>
+              </div>
+            </div>
+
+            <div class="farrow" style="flex-direction:column;gap:2px;">
+              <span style="font-size:8px;color:var(--b1)">ДА →</span>
+              <span style="font-size:8px;color:var(--b3)">НЕТ ✕</span>
+            </div>
+
+            <div class="fnode">
+              <div class="fnode-box">
+                <div class="fnode-icon">🎵</div>
+                <div class="fnode-title">Саундчек</div>
+                <div class="fnode-sub">по тайм-листу</div>
+              </div>
+            </div>
+
+            <div class="farrow">→</div>
+
+            <div class="fnode">
+              <div class="fnode-box">
+                <div class="fnode-icon">🎤</div>
+                <div class="fnode-title">Шоу</div>
+                <div class="fnode-sub">ТМ за кулисами</div>
+              </div>
+            </div>
+
+            <div class="farrow">→</div>
+
+            <div class="fnode end">
+              <div class="fnode-box">
+                <div class="fnode-icon">🚐</div>
+                <div class="fnode-title">Выезд</div>
+                <div class="fnode-sub">охрана до машины</div>
+                <div class="fnode-result">→ Блок 3</div>
+              </div>
+            </div>
+
+          </div>
+        </div>
+
+        <div class="section" id="s-2-1">
+          <div class="section-head" onclick="toggleSection('s-2-1')">
+            <div class="section-idx">2.1</div>
+            <div class="section-title" contenteditable="false">Утро — подъём и выезд на площадку</div>
+            <div class="section-role role-tm">тур-менеджер</div>
+            <div class="section-arrow">▼</div>
+          </div>
+          <div class="section-body">
+            <div class="reglament">
+              <p contenteditable="false">ТМ лично будит каждого участника (звонок/стук), убеждается что встали. Тайминг выезда установлен ТМ самостоятельно с запасом на форс-мажор. Технический персонал выехал первым. Артист не выходит самостоятельно — за ним приходят и забирают лично.</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="section" id="s-2-2">
+          <div class="section-head" onclick="toggleSection('s-2-2')">
+            <div class="section-idx">2.2</div>
+            <div class="section-title" contenteditable="false">Приём площадки и проверка</div>
+            <div class="section-role role-tm">тур-менеджер</div>
+            <div class="section-arrow">▼</div>
+          </div>
+          <div class="section-body">
+            <div class="reglament">
+              <p contenteditable="false">ТМ прибывает на площадку раньше коллектива. Проверяет гримёрки, питание, охрану по чеклисту. Фиксирует все отклонения фото/видео. Без ковролина, барьеров и медбригады — выступление не начинается.</p>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- ══════════════════════════════════════ БЛОК 3 -->
+    <div class="block b3" id="block-3">
+      <div class="block-head" onclick="toggleBlock('block-3')">
+        <div class="block-num">3</div>
+        <div class="block-title" contenteditable="false">Post-show</div>
+        <div class="block-meta">закрытие, финансы, разбор</div>
+        <div class="block-arrow">▶</div>
+      </div>
+      <div class="block-body">
+
+        <div class="flow-wrap">
+          <div class="flow-label">схема процесса</div>
+          <div class="flow">
+
+            <div class="fnode start">
+              <div class="fnode-box">
+                <div class="fnode-icon">🎭</div>
+                <div class="fnode-title">Шоу завершено</div>
+                <div class="fnode-sub">выезд с площадки</div>
+              </div>
+            </div>
+
+            <div class="farrow">→</div>
+
+            <div class="fnode">
+              <div class="fnode-box">
+                <div class="fnode-icon">💰</div>
+                <div class="fnode-title">Финальный расчёт</div>
+                <div class="fnode-sub">остаток гонорара</div>
+              </div>
+            </div>
+
+            <div class="farrow">→</div>
+
+            <div class="fnode">
+              <div class="fnode-box">
+                <div class="fnode-icon">📝</div>
+                <div class="fnode-title">Акты и документы</div>
+                <div class="fnode-sub">в течение 5 дней</div>
+              </div>
+            </div>
+
+            <div class="farrow">→</div>
+
+            <div class="fnode">
+              <div class="fnode-box">
+                <div class="fnode-icon">🔁</div>
+                <div class="fnode-title">Разбор ошибок</div>
+                <div class="fnode-sub">в течение 48 часов</div>
+              </div>
+            </div>
+
+            <div class="farrow">→</div>
+
+            <div class="fnode end">
+              <div class="fnode-box">
+                <div class="fnode-icon">🗄</div>
+                <div class="fnode-title">Архив</div>
+                <div class="fnode-sub">папка закрыта</div>
+                <div class="fnode-result">цикл завершён</div>
+              </div>
+            </div>
+
+          </div>
+        </div>
+
+        <div class="section" id="s-3-1">
+          <div class="section-head" onclick="toggleSection('s-3-1')">
+            <div class="section-idx">3.1</div>
+            <div class="section-title" contenteditable="false">Финальный расчёт и документы</div>
+            <div class="section-role role-kd">конц. директор</div>
+            <div class="section-arrow">▼</div>
+          </div>
+          <div class="section-body">
+            <div class="reglament">
+              <p contenteditable="false">Акт сдачи-приёмки составляется и подписывается в течение 5 рабочих дней. Если от артиста/КД не поступило претензий — акт, подписанный ТМ в одностороннем порядке, считается действительным. Расходы ТМ из личных средств возмещаются в течение 10 рабочих дней при наличии подтверждающих документов.</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="section" id="s-3-2">
+          <div class="section-head" onclick="toggleSection('s-3-2')">
+            <div class="section-idx">3.2</div>
+            <div class="section-title" contenteditable="false">Разбор ошибок и архив</div>
+            <div class="section-role role-both">КД + ТМ</div>
+            <div class="section-arrow">▼</div>
+          </div>
+          <div class="section-body">
+            <div class="reglament">
+              <p contenteditable="false">Разбор — не позднее 48 часов после мероприятия. Фиксируется: что пошло не по плану, чья зона ответственности, как исправить в следующий раз. В базу: фото гримёрки до/после, видео выступления, тайм-лист с отклонениями. Чек-лист актуализируется по итогам.</p>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<div class="edit-badge">✎ режим редактирования активен</div>
+
+<script>
+// ── PASSWORD ──
+const PASSWORD = '1234';
+
+function checkPassword() {
+  const val = document.getElementById('lock-input').value;
+  if (val === PASSWORD) {
+    document.getElementById('lock-screen').style.display = 'none';
+    document.getElementById('app').style.display = 'block';
+  } else {
+    const err = document.getElementById('lock-error');
+    err.classList.add('show');
+    document.getElementById('lock-input').value = '';
+    setTimeout(() => err.classList.remove('show'), 2000);
+  }
+}
+document.getElementById('lock-input').addEventListener('keydown', e => {
+  if (e.key === 'Enter') checkPassword();
+});
+
+// ── TREE NAVIGATION ──
+function toggleBlock(id) { document.getElementById(id).classList.toggle('open'); }
+function toggleSection(id) { document.getElementById(id).classList.toggle('open'); }
+function toggleSub(id) { document.getElementById(id).classList.toggle('open'); }
+
+let allOpen = false;
+function toggleAll() {
+  allOpen = !allOpen;
+  document.querySelectorAll('.block,.section,.sub').forEach(el => el.classList.toggle('open', allOpen));
+  document.querySelector('[onclick="toggleAll()"]').textContent = allOpen ? 'свернуть все' : 'развернуть все';
+}
+
+// ── EDIT MODE ──
+let editMode = false;
+
+function toggleEdit() {
+  editMode = !editMode;
+  document.body.classList.toggle('edit-mode', editMode);
+  document.querySelectorAll('[contenteditable]').forEach(el => {
+    el.contentEditable = editMode ? 'true' : 'false';
+  });
+  document.querySelector('.edit-toggle').textContent = editMode ? '✎ выйти из редактора' : '✎ режим редактора';
+}
+
+// ── SAVE FILE ──
+function saveFile() {
+  // Snapshot current state with edits baked in
+  const clone = document.documentElement.cloneNode(true);
+
+  // Lock contenteditable off in saved file
+  clone.querySelectorAll('[contenteditable]').forEach(el => {
+    el.removeAttribute('contenteditable');
+  });
+
+  // Bake the current password into saved file
+  const scripts = clone.querySelectorAll('script');
+  scripts.forEach(s => {
+    if (s.textContent.includes("const PASSWORD")) {
+      s.textContent = s.textContent.replace(/const PASSWORD = '.*?'/, `const PASSWORD = '${PASSWORD}'`);
+    }
+  });
+
+  const html = '<!DOCTYPE html>\n' + clone.outerHTML;
+  const blob = new Blob([html], { type: 'text/html' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'agency_sop.html';
+  a.click();
+  URL.revokeObjectURL(a.href);
+}
+</script>
+</body>
+</html>
