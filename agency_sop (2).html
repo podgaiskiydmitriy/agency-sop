@@ -1,0 +1,814 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Операционная карта агентства</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Unbounded:wght@300;400;500;600&family=Inter:wght@300;400;500&display=swap');
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #0f0f0f;
+    --bg2: #161616;
+    --bg3: #1e1e1e;
+    --bg4: #252525;
+    --line: rgba(255,255,255,0.07);
+    --line2: rgba(255,255,255,0.12);
+    --text: #e8e6e1;
+    --muted: #888580;
+    --faint: #444240;
+
+    --b0: #a78bfa; --b0bg: rgba(167,139,250,0.08); --b0line: rgba(167,139,250,0.25);
+    --b1: #34d399; --b1bg: rgba(52,211,153,0.08); --b1line: rgba(52,211,153,0.25);
+    --b2: #fbbf24; --b2bg: rgba(251,191,36,0.08); --b2line: rgba(251,191,36,0.25);
+    --b3: #f87171; --b3bg: rgba(248,113,113,0.08); --b3line: rgba(248,113,113,0.25);
+  }
+
+  html { background: var(--bg); color: var(--text); font-family: 'Inter', sans-serif; font-size: 14px; line-height: 1.6; }
+
+  body { max-width: 820px; margin: 0 auto; padding: 40px 24px 80px; }
+
+  /* Header */
+  .hdr { margin-bottom: 40px; }
+  .hdr-eyebrow { font-family: 'Unbounded', sans-serif; font-size: 10px; font-weight: 300; letter-spacing: 0.2em; color: var(--muted); text-transform: uppercase; margin-bottom: 12px; }
+  .hdr-title { font-family: 'Unbounded', sans-serif; font-size: 22px; font-weight: 400; color: var(--text); line-height: 1.3; }
+  .hdr-sub { font-size: 13px; color: var(--muted); margin-top: 8px; }
+  .hdr-divider { height: 1px; background: var(--line2); margin-top: 24px; }
+
+  /* Legend */
+  .legend { display: flex; gap: 20px; flex-wrap: wrap; margin-bottom: 32px; }
+  .legend-item { display: flex; align-items: center; gap: 7px; font-size: 11px; color: var(--muted); }
+  .legend-dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
+
+  /* Tree */
+  .tree { display: flex; flex-direction: column; gap: 6px; }
+
+  /* Block (level 1) */
+  .block { border-radius: 10px; overflow: hidden; border: 1px solid var(--line); transition: border-color 0.2s; }
+  .block.open { border-color: var(--line2); }
+
+  .block-head {
+    display: flex; align-items: center; gap: 14px;
+    padding: 16px 18px; cursor: pointer;
+    background: var(--bg2);
+    transition: background 0.15s;
+    user-select: none;
+  }
+  .block-head:hover { background: var(--bg3); }
+  .block.open .block-head { background: var(--bg3); }
+
+  .block-num {
+    font-family: 'Unbounded', sans-serif;
+    font-size: 10px; font-weight: 500;
+    width: 28px; height: 28px; border-radius: 6px;
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+  }
+  .block-title { font-family: 'Unbounded', sans-serif; font-size: 12px; font-weight: 400; flex: 1; }
+  .block-meta { font-size: 11px; color: var(--muted); }
+  .block-arrow { color: var(--faint); font-size: 10px; transition: transform 0.25s; flex-shrink: 0; }
+  .block.open .block-arrow { transform: rotate(90deg); }
+
+  .block-body { display: none; border-top: 1px solid var(--line); }
+  .block.open .block-body { display: block; }
+
+  /* Section (level 2) */
+  .section { border-bottom: 1px solid var(--line); }
+  .section:last-child { border-bottom: none; }
+
+  .section-head {
+    display: flex; align-items: center; gap: 12px;
+    padding: 13px 18px 13px 56px;
+    cursor: pointer; background: var(--bg2);
+    transition: background 0.15s;
+    user-select: none;
+  }
+  .section-head:hover { background: var(--bg4); }
+  .section.open .section-head { background: var(--bg4); }
+
+  .section-idx { font-size: 11px; color: var(--faint); font-family: 'Unbounded', sans-serif; font-weight: 300; width: 28px; flex-shrink: 0; }
+  .section-title { font-size: 13px; color: var(--text); flex: 1; font-weight: 400; }
+  .section-role {
+    font-size: 10px; color: var(--muted);
+    border: 1px solid var(--line2); border-radius: 20px;
+    padding: 2px 9px; flex-shrink: 0;
+    white-space: nowrap;
+  }
+  .section-arrow { color: var(--faint); font-size: 9px; transition: transform 0.2s; flex-shrink: 0; }
+  .section.open .section-arrow { transform: rotate(180deg); }
+
+  .section-body { display: none; padding: 0 18px 16px 56px; background: var(--bg2); }
+  .section.open .section-body { display: block; }
+
+  /* Reglament text */
+  .reglament {
+    font-size: 13px; color: #b0aea8; line-height: 1.75;
+    margin-bottom: 12px; padding-top: 12px;
+    border-top: 1px solid var(--line);
+  }
+  .reglament p { margin-bottom: 8px; }
+  .reglament p:last-child { margin-bottom: 0; }
+
+  /* Sub-items (level 3) */
+  .subs { margin-top: 10px; display: flex; flex-direction: column; gap: 4px; }
+  .sub-head {
+    display: flex; align-items: flex-start; gap: 10px;
+    padding: 9px 12px; border-radius: 6px;
+    background: var(--bg3); border: 1px solid transparent;
+    cursor: pointer; transition: all 0.15s;
+  }
+  .sub-head:hover { border-color: var(--line2); }
+  .sub.open .sub-head { border-color: var(--line2); background: var(--bg4); }
+  .sub-bullet { width: 5px; height: 5px; border-radius: 50%; background: var(--faint); margin-top: 5px; flex-shrink: 0; }
+  .sub-title { font-size: 12px; color: var(--text); flex: 1; }
+  .sub-arrow { font-size: 8px; color: var(--faint); transition: transform 0.2s; margin-top: 2px; flex-shrink: 0; }
+  .sub.open .sub-arrow { transform: rotate(180deg); }
+  .sub-body { display: none; padding: 8px 12px 0 25px; }
+  .sub.open .sub-body { display: block; }
+  .sub-text { font-size: 12px; color: var(--muted); line-height: 1.7; }
+
+  /* Role badge colors */
+  .role-kd { color: #a78bfa; border-color: rgba(167,139,250,0.25); }
+  .role-tm { color: #34d399; border-color: rgba(52,211,153,0.25); }
+  .role-both { color: #fbbf24; border-color: rgba(251,191,36,0.25); }
+  .role-all { color: #f87171; border-color: rgba(248,113,113,0.25); }
+  .role-sec { color: #60a5fa; border-color: rgba(96,165,250,0.25); }
+
+  /* Block color accents */
+  .b0 .block-num { background: var(--b0bg); color: var(--b0); }
+  .b0 .block-title { color: var(--b0); }
+  .b1 .block-num { background: var(--b1bg); color: var(--b1); }
+  .b1 .block-title { color: var(--b1); }
+  .b2 .block-num { background: var(--b2bg); color: var(--b2); }
+  .b2 .block-title { color: var(--b2); }
+  .b3 .block-num { background: var(--b3bg); color: var(--b3); }
+  .b3 .block-title { color: var(--b3); }
+
+  .b0.open { border-color: var(--b0line); }
+  .b1.open { border-color: var(--b1line); }
+  .b2.open { border-color: var(--b2line); }
+  .b3.open { border-color: var(--b3line); }
+
+  /* Expand all toggle */
+  .controls { display: flex; justify-content: flex-end; margin-bottom: 16px; }
+  .btn-toggle {
+    font-size: 11px; color: var(--muted);
+    background: none; border: 1px solid var(--line2);
+    padding: 5px 12px; border-radius: 20px; cursor: pointer;
+    transition: all 0.15s; font-family: 'Inter', sans-serif;
+  }
+  .btn-toggle:hover { color: var(--text); border-color: var(--line2); background: var(--bg3); }
+
+  /* Stop signal highlight */
+  .stop { color: #f87171; font-weight: 500; }
+
+  /* Footnote */
+  .footnote { margin-top: 40px; padding-top: 20px; border-top: 1px solid var(--line); font-size: 11px; color: var(--faint); }
+</style>
+</head>
+<body>
+
+<div class="hdr">
+  <div class="hdr-eyebrow">Концертное агентство · Операционная база</div>
+  <div class="hdr-title">Карта процессов</div>
+  <div class="hdr-sub">Жизненный цикл мероприятия · от заявки до закрытия</div>
+  <div class="hdr-divider"></div>
+</div>
+
+<div class="legend">
+  <div class="legend-item"><span class="legend-dot" style="background:#a78bfa"></span> Концертный директор</div>
+  <div class="legend-item"><span class="legend-dot" style="background:#34d399"></span> Тур-менеджер</div>
+  <div class="legend-item"><span class="legend-dot" style="background:#fbbf24"></span> КД + ТМ совместно</div>
+  <div class="legend-item"><span class="legend-dot" style="background:#60a5fa"></span> Охрана / тех. персонал</div>
+  <div class="legend-item"><span class="legend-dot" style="background:#f87171"></span> Все роли</div>
+</div>
+
+<div class="controls">
+  <button class="btn-toggle" onclick="toggleAll()">Развернуть все</button>
+</div>
+
+<div class="tree" id="tree">
+
+  <!-- ═══════════════════════════════════════════════════ БЛОК 0 -->
+  <div class="block b0" id="block-0">
+    <div class="block-head" onclick="toggleBlock('block-0')">
+      <div class="block-num">0</div>
+      <div class="block-title">Подготовка сделки</div>
+      <div class="block-meta">от заявки до предоплаты</div>
+      <div class="block-arrow">▶</div>
+    </div>
+    <div class="block-body">
+
+      <!-- 0.1 -->
+      <div class="section" id="s-0-1">
+        <div class="section-head" onclick="toggleSection('s-0-1')">
+          <div class="section-idx">0.1</div>
+          <div class="section-title">Приём заявки и квалификация</div>
+          <div class="section-role role-kd">Конц. директор</div>
+          <div class="section-arrow">▼</div>
+        </div>
+        <div class="section-body">
+          <div class="reglament">
+            <p>Все входящие запросы поступают только через официальные каналы агентства — Telegram-аккаунт бронирования и официальная почта. Артист переадресует все прямые обращения концертному директору — это зафиксировано в договоре.</p>
+            <p>Срок реакции на запрос — не позднее 24 часов. Отсутствие ответа в течение суток недопустимо, даже если решение ещё не принято: достаточно подтвердить получение.</p>
+          </div>
+          <div class="subs">
+            <div class="sub" id="sub-0-1-1">
+              <div class="sub-head" onclick="toggleSub('sub-0-1-1')">
+                <div class="sub-bullet"></div>
+                <div class="sub-title">Что выяснить при первом контакте</div>
+                <div class="sub-arrow">▼</div>
+              </div>
+              <div class="sub-body">
+                <div class="sub-text">По заказчику: кто обращается (организатор или посредник), откуда знает контакты агентства, какие мероприятия проводил ранее.<br><br>По мероприятию: формат (концерт / клабшоу / корпоратив / фестиваль), город и страна, предполагаемая дата, площадка, ожидаемое количество зрителей.<br><br>По бюджету: хотя бы вилка. Если заказчик категорически отказывается называть бюджет — сигнал для осторожности.</div>
+              </div>
+            </div>
+            <div class="sub" id="sub-0-1-2">
+              <div class="sub-head" onclick="toggleSub('sub-0-1-2')">
+                <div class="sub-bullet"></div>
+                <div class="sub-title">Стоп-сигналы → вежливый отказ</div>
+                <div class="sub-arrow">▼</div>
+              </div>
+              <div class="sub-body">
+                <div class="sub-text"><span class="stop">✕</span> Заказчик не раскрывает бюджет вообще<br><span class="stop">✕</span> Дата менее 14 дней от текущей (экстренные — индивидуально)<br><span class="stop">✕</span> Запрашиваемый формат противоречит текущей политике артиста<br><span class="stop">✕</span> Площадка или страна под ограничениями</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 0.2 -->
+      <div class="section" id="s-0-2">
+        <div class="section-head" onclick="toggleSection('s-0-2')">
+          <div class="section-idx">0.2</div>
+          <div class="section-title">Переговоры и согласование условий</div>
+          <div class="section-role role-kd">Конц. директор</div>
+          <div class="section-arrow">▼</div>
+        </div>
+        <div class="section-body">
+          <div class="reglament">
+            <p>Главный переговорный этап. Типичный срок — 2–7 дней в зависимости от сложности. Спешить нельзя: лучше потратить лишний день на уточнение, чем исправлять договор.</p>
+            <p>Все принципиальные договорённости фиксируются письменно. Устные договорённости не являются основанием для начала подготовки.</p>
+            <p>Концертный директор руководствуется принципом наилучшего предложения для артиста — не только по гонорару, но и по условиям, логистике, репутации заказчика. Артист согласовывает итоговые условия и даёт финальное одобрение перед подписанием.</p>
+          </div>
+          <div class="subs">
+            <div class="sub" id="sub-0-2-1">
+              <div class="sub-head" onclick="toggleSub('sub-0-2-1')">
+                <div class="sub-bullet"></div>
+                <div class="sub-title">Финансовые условия</div>
+                <div class="sub-arrow">▼</div>
+              </div>
+              <div class="sub-body">
+                <div class="sub-text">Гонорар (итоговая сумма), размер предоплаты и конкретная дата её поступления, порядок выплаты остатка, условия при переносе и отмене. Стандарт: предоплата до старта любой подготовки. Никакой логистики, брони и передачи райдеров без подтверждённой предоплаты.</div>
+              </div>
+            </div>
+            <div class="sub" id="sub-0-2-2">
+              <div class="sub-head" onclick="toggleSub('sub-0-2-2')">
+                <div class="sub-bullet"></div>
+                <div class="sub-title">Формат и тайминг</div>
+                <div class="sub-arrow">▼</div>
+              </div>
+              <div class="sub-body">
+                <div class="sub-text">Точная дата, продолжительность выступления, время саундчека, тайминг прибытия и отъезда коллектива. Всё согласуется до подписания — вносить изменения после значительно сложнее.</div>
+              </div>
+            </div>
+            <div class="sub" id="sub-0-2-3">
+              <div class="sub-head" onclick="toggleSub('sub-0-2-3')">
+                <div class="sub-bullet"></div>
+                <div class="sub-title">Логистика коллектива</div>
+                <div class="sub-arrow">▼</div>
+              </div>
+              <div class="sub-body">
+                <div class="sub-text">Состав коллектива, кто несёт расходы на перелёты и проживание (заказчик или из гонорара), суточные. Фиксируется до подписания договора.</div>
+              </div>
+            </div>
+            <div class="sub" id="sub-0-2-4">
+              <div class="sub-head" onclick="toggleSub('sub-0-2-4')">
+                <div class="sub-bullet"></div>
+                <div class="sub-title">Райдеры</div>
+                <div class="sub-arrow">▼</div>
+              </div>
+              <div class="sub-body">
+                <div class="sub-text">Заказчику направляются оба райдера — технический и бытовой. Версия согласовывается с артистом заранее. После отправки не меняется без оснований. Изменения после подписания, увеличивающие расходы заказчика более чем на 50 000 руб., не являются его обязательством.</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 0.3 -->
+      <div class="section" id="s-0-3">
+        <div class="section-head" onclick="toggleSection('s-0-3')">
+          <div class="section-idx">0.3</div>
+          <div class="section-title">Договор и предоплата</div>
+          <div class="section-role role-kd">Конц. директор</div>
+          <div class="section-arrow">▼</div>
+        </div>
+        <div class="section-body">
+          <div class="reglament">
+            <p>Договор направляется заказчику не позднее 48 часов после финального согласования условий. Оба райдера являются неотъемлемыми приложениями к договору и имеют равную с ним юридическую силу — даже без отдельного подписания.</p>
+            <p>Поступление предоплаты — единственный триггер перехода в Блок 1. До этого дата не считается забронированной.</p>
+          </div>
+          <div class="subs">
+            <div class="sub" id="sub-0-3-1">
+              <div class="sub-head" onclick="toggleSub('sub-0-3-1')">
+                <div class="sub-bullet"></div>
+                <div class="sub-title">Обязательные элементы договора</div>
+                <div class="sub-arrow">▼</div>
+              </div>
+              <div class="sub-body">
+                <div class="sub-text">
+                  <b style="color:var(--text)">По мероприятию:</b> точная дата, город, площадка, формат, хронометраж, тайминг прибытия коллектива.<br><br>
+                  <b style="color:var(--text)">По финансам:</b> полный гонорар, размер и дата предоплаты, порядок остатка, условия при переносе и отмене.<br><br>
+                  <b style="color:var(--text)">По безопасности:</b> требования к охране, схема постановки, наличие служебного входа, кольцо при проходе.<br><br>
+                  <b style="color:var(--text)">По ответственности:</b> штрафы за несоблюдение условий, форс-мажор.
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 0.4 -->
+      <div class="section" id="s-0-4">
+        <div class="section-head" onclick="toggleSection('s-0-4')">
+          <div class="section-idx">0.4</div>
+          <div class="section-title">Фиксация и передача тур-менеджеру</div>
+          <div class="section-role role-both">КД → ТМ</div>
+          <div class="section-arrow">▼</div>
+        </div>
+        <div class="section-body">
+          <div class="reglament">
+            <p>Выполняется в день поступления предоплаты. Три обязательных действия: дата вносится в мастер-расписание, создаётся папка мероприятия, тур-менеджер получает передаточный бриф.</p>
+            <p>С момента отправки брифа операционная ответственность переходит к тур-менеджеру. Начинается Блок 1.</p>
+          </div>
+          <div class="subs">
+            <div class="sub" id="sub-0-4-1">
+              <div class="sub-head" onclick="toggleSub('sub-0-4-1')">
+                <div class="sub-bullet"></div>
+                <div class="sub-title">Состав передаточного брифа</div>
+                <div class="sub-arrow">▼</div>
+              </div>
+              <div class="sub-body">
+                <div class="sub-text">Дата и город · Формат мероприятия · Состав коллектива · Гонорар и условия оплаты · Контакт заказчика и площадки · Согласованные отступления от райдера (если есть) · Специфические условия и ограничения · Ссылка на папку мероприятия</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- BLOCK 1 -->
+  <div class="block b1" id="block-1">
+    <div class="block-head" onclick="toggleBlock('block-1')">
+      <div class="block-num">1</div>
+      <div class="block-title">Pre-show</div>
+      <div class="block-meta">от получения брифа до дня выезда</div>
+      <div class="block-arrow">▶</div>
+    </div>
+    <div class="block-body">
+
+      <!-- 1.1 -->
+      <div class="section" id="s-1-1">
+        <div class="section-head" onclick="toggleSection('s-1-1')">
+          <div class="section-idx">1.1</div>
+          <div class="section-title">Авиа и наземная логистика</div>
+          <div class="section-role role-tm">Тур-менеджер</div>
+          <div class="section-arrow">▼</div>
+        </div>
+        <div class="section-body">
+          <div class="reglament">
+            <p>Логистика бронируется сразу после получения брифа — не ждать напоминания. Имена в билетах строго по загранпаспортам. Онлайн-регистрация за 24 ч до вылета, посадочный высылается в TG с текстом. Финансовая ответственность за пропущенный рейс или опоздание лежит на ТМ.</p>
+            <p>«Со мной никто не связался» — недопустимая позиция. ТМ сам инициирует все контакты.</p>
+          </div>
+          <div class="subs">
+            <div class="sub" id="sub-1-1-1">
+              <div class="sub-head" onclick="toggleSub('sub-1-1-1')">
+                <div class="sub-bullet"></div>
+                <div class="sub-title">Перелёты</div>
+                <div class="sub-arrow">▼</div>
+              </div>
+              <div class="sub-body">
+                <div class="sub-text">Имена строго по загранпаспортам — скриншот каждого билета в TG. Доп. багаж, Sky Priority / Fast Track — оплачены и подтверждены. Бонусные карты всех участников внесены в билеты. Уточнить у ассистента/охраны: кто провожает артиста из дома. ТМ не уходит, пока последний участник не зашёл в зону вылета. Если кто-то забыл вещь в отеле — организовать доставку до паспортного контроля.</div>
+              </div>
+            </div>
+            <div class="sub" id="sub-1-1-2">
+              <div class="sub-head" onclick="toggleSub('sub-1-1-2')">
+                <div class="sub-bullet"></div>
+                <div class="sub-title">Наземный транспорт</div>
+                <div class="sub-arrow">▼</div>
+              </div>
+              <div class="sub-body">
+                <div class="sub-text">Машины премиум-класса. В салоне: вода «Святой Источник» без газа + Cola Zero без сахара — проверить лично. Кондиционер настроен до посадки. Водители предупреждаются лично, не через организаторов. Технический персонал — отдельная машина, выезжают раньше коллектива. ТМ знает куда везут техников: контакт встречающего на площадке. ТМ считает коллектив поимённо перед отправлением.</div>
+              </div>
+            </div>
+            <div class="sub" id="sub-1-1-3">
+              <div class="sub-head" onclick="toggleSub('sub-1-1-3')">
+                <div class="sub-bullet"></div>
+                <div class="sub-title">Оборудование и съёмка</div>
+                <div class="sub-arrow">▼</div>
+              </div>
+              <div class="sub-body">
+                <div class="sub-text">Штатив для технического видео концерта — взят, не забыт. Инэиры фронтмена — при нём или у ТМ, не оставлять у DJ и других. Продуктовая корзина в поезд/автобус — укомплектована.</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 1.2 -->
+      <div class="section" id="s-1-2">
+        <div class="section-head" onclick="toggleSection('s-1-2')">
+          <div class="section-idx">1.2</div>
+          <div class="section-title">Отель — подготовка до приезда</div>
+          <div class="section-role role-tm">Тур-менеджер</div>
+          <div class="section-arrow">▼</div>
+        </div>
+        <div class="section-body">
+          <div class="reglament">
+            <p>За неделю до приезда — подтверждение брони всех номеров, желательно на одном этаже. Ключ-карты готовы до приезда — получение через очередь на стойке недопустимо. Все договоры с отелем подписаны Заказчиком заранее. Из номера фронтмена убираются все «комплименты» от отеля: еда, напитки, корзины, записки.</p>
+          </div>
+          <div class="subs">
+            <div class="sub" id="sub-1-2-1">
+              <div class="sub-head" onclick="toggleSub('sub-1-2-1')">
+                <div class="sub-bullet"></div>
+                <div class="sub-title">Что проверить до приезда коллектива</div>
+                <div class="sub-arrow">▼</div>
+              </div>
+              <div class="sub-body">
+                <div class="sub-text">Представитель Заказчика проверил номера накануне: нет посторонних шумов, стройки. Мини-бары НЕ закрыты ключом и не «очищены». Тренажёрный зал, бассейн — открыты и оплачены если не входят в тариф. Дубликаты ключ-карт всех номеров хранятся у ТМ. Заказчик выслал меню ресторана / рум-сервиса + номер для заказа. Рядом с отелем: аптека + ресторан нужного типа кухни — адреса у ТМ. Депозит от Заказчика внесён по всем номерам до приезда коллектива.</div>
+              </div>
+            </div>
+            <div class="sub" id="sub-1-2-2">
+              <div class="sub-head" onclick="toggleSub('sub-1-2-2')">
+                <div class="sub-bullet"></div>
+                <div class="sub-title">Продуктовая корзина в номера</div>
+                <div class="sub-arrow">▼</div>
+              </div>
+              <div class="sub-body">
+                <div class="sub-text">Доставлена в номера до приезда коллектива или передана ТМ лично. Доп. позиции по запросу (лекарства, гигиена и т.д.) — выданы ТМ в руки каждому. Все позиции сверены по бытовому райдеру.</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 1.3 -->
+      <div class="section" id="s-1-3">
+        <div class="section-head" onclick="toggleSection('s-1-3')">
+          <div class="section-idx">1.3</div>
+          <div class="section-title">Работа с райдерами — контроль исполнения</div>
+          <div class="section-role role-tm">Тур-менеджер</div>
+          <div class="section-arrow">▼</div>
+        </div>
+        <div class="section-body">
+          <div class="reglament">
+            <p>ТМ несёт полную личную ответственность за бытовой райдер. По техническому и световому — надзорно-организационная: контролирует, фиксирует нарушения, докладывает КД. Самостоятельно технику не исправляет.</p>
+            <p>Не доверяй словам организатора — всё проверяется лично. За 5 дней — схема расстановки охраны и контакт начальника СБ. За 2 дня — финальная сверка по каждому пункту.</p>
+          </div>
+          <div class="subs">
+            <div class="sub" id="sub-1-3-1">
+              <div class="sub-head" onclick="toggleSub('sub-1-3-1')">
+                <div class="sub-bullet"></div>
+                <div class="sub-title">Бытовой райдер — ключевые позиции</div>
+                <div class="sub-arrow">▼</div>
+              </div>
+              <div class="sub-body">
+                <div class="sub-text"><b style="color:var(--text)">Гримёрки:</b> артисту — отдельная с санузлом, ключ у ТМ. Коллективу — отдельная с санузлом. При одной комнате — зонирование (ширма, таблички «Артист» / «Команда»). Путь от служебного входа до гримёрки и до сцены — проверен лично. Фото ДО и ПОСЛЕ накрытия — в базу.<br><br><b style="color:var(--text)">Напитки и еда фронтмена:</b> вода «Святой Источник» 0,5л × 20 шт., без этикеток, крышки открыты перед шоу · Cola Zero без сахара × 5 — <span class="stop">⚠️ ПРОВЕРИТЬ ДВАЖДЫ</span> · Red Bull без сахара × 5 · Ягодная тарелка (клубника, малина, голубика) · Орехи (кешью, миндаль, фундук, фисташки) · Нарезанный лимон · Чёрный чай пакетиками (НЕ заварка), чистый чайник · Алкоголь: красное сухое вино, Hennessy VSOP, водка 0,5 · 5 предварительно замороженных рюмок · Постные/веганские блюда (V, Ve метки).<br><br><b style="color:var(--text)">Прочее:</b> 4 больших + 4 средних белых махровых полотенца · Ролик для чистки одежды · Зеркало во весь рост · Канцелярские ножницы, скотч, тейп · Листы А4 × 20 · Штопор · Булавки · Прозрачный и цветной тейп.</div>
+              </div>
+            </div>
+            <div class="sub" id="sub-1-3-2">
+              <div class="sub-head" onclick="toggleSub('sub-1-3-2')">
+                <div class="sub-bullet"></div>
+                <div class="sub-title">Сцена — безусловные требования</div>
+                <div class="sub-arrow">▼</div>
+              </div>
+              <div class="sub-body">
+                <div class="sub-text"><b style="color:#f87171">Без этого выступления нет:</b><br>· Вся сцена покрыта чёрным ковролином (минимум передняя половина), надёжно закреплён<br>· Лестница на сцену освещена лед-лентой — минимум 3 верхних ступени<br>· Барьеры (MOJO) перед сценой и пультовой — стоят, без «дырок»<br>· Медбригада и скорая на площадке (≥600 зрителей — 1 машина, ≥1000 — 2 машины)<br><br><b style="color:var(--text)">Остальное:</b> выход на сцену огорождён чёрным раусом · CO₂-кнопка на диджейке, лишние кнопки заклеены тейпом · Дым-машины протестированы на максимальную плотность · Вентиляторы для DJ и артиста · Открытые участки FOH заклеены чёрным полиэтиленом · Провода убраны, кабель-менеджмент чистый · Электробезопасность проверена.</div>
+              </div>
+            </div>
+            <div class="sub" id="sub-1-3-3">
+              <div class="sub-head" onclick="toggleSub('sub-1-3-3')">
+                <div class="sub-bullet"></div>
+                <div class="sub-title">Технический и световой райдер</div>
+                <div class="sub-arrow">▼</div>
+              </div>
+              <div class="sub-body">
+                <div class="sub-text">ТМ получает письменное подтверждение от площадки по каждому пункту. Отклонения — фиксирует, докладывает КД, самостоятельно не исправляет. Световой райдер — строго по нумерованному списку со штрафами, не по офферу. Оборудование площадки оплачено Заказчиком не позднее чем за 5 дней. Задержка из-за неготовой площадки — штраф Заказчику 10% гонорара, ответственность с Коллектива снимается.</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 1.4 -->
+      <div class="section" id="s-1-4">
+        <div class="section-head" onclick="toggleSection('s-1-4')">
+          <div class="section-idx">1.4</div>
+          <div class="section-title">Организационные задачи — день приезда</div>
+          <div class="section-role role-tm">Тур-менеджер</div>
+          <div class="section-arrow">▼</div>
+        </div>
+        <div class="section-body">
+          <div class="reglament">
+            <p>Все документы распечатаны Заказчиком — не ТМ на принтере отеля. Треклист высылается организаторам в PDF (не ссылка на Google Doc), с напоминанием о запрете распространения третьим лицам. Все инструменты (Word, TG, почта) проверены заранее.</p>
+          </div>
+          <div class="subs">
+            <div class="sub" id="sub-1-4-1">
+              <div class="sub-head" onclick="toggleSub('sub-1-4-1')">
+                <div class="sub-bullet"></div>
+                <div class="sub-title">Охрана — предварительная подготовка</div>
+                <div class="sub-arrow">▼</div>
+              </div>
+              <div class="sub-body">
+                <div class="sub-text">За 5 дней: схема расстановки охраны (фото-схема с точками постов) + контакт начальника СБ. Минимум на любом мероприятии — 15 охранников. Брифинг команды Заказчика по правилам — письменно. Охранники не присутствуют в гримёрках. Снаружи гримёрки артиста — охрана с момента открытия дверей и до выезда всей команды. Проход коллектива — только через служебный вход в кольце 4+ охранников.</div>
+              </div>
+            </div>
+            <div class="sub" id="sub-1-4-2">
+              <div class="sub-head" onclick="toggleSub('sub-1-4-2')">
+                <div class="sub-bullet"></div>
+                <div class="sub-title">Аккредитации, пресса, гости</div>
+                <div class="sub-arrow">▼</div>
+              </div>
+              <div class="sub-body">
+                <div class="sub-text">Пригласительные / браслеты / гостевые списки — запрос подтверждён. Москва/СПб — до 100 гостей (≤5% вместимости), регионы — до 50. Хостес встречает и рассаживает гостей. Аккредитация фотографов: портфолио получено, кандидатура утверждена артистом. Съёмка со сцены — только с прямого разрешения артиста. Пресса проинструктирована: не просить фото. Материалы публикуются только после личного утверждения. Запись в МСК/СПб: договорённость о передаче исходников подтверждена.</div>
+              </div>
+            </div>
+            <div class="sub" id="sub-1-4-3">
+              <div class="sub-head" onclick="toggleSub('sub-1-4-3')">
+                <div class="sub-bullet"></div>
+                <div class="sub-title">Суточные и депозит</div>
+                <div class="sub-arrow">▼</div>
+              </div>
+              <div class="sub-body">
+                <div class="sub-text">Суточные посчитаны корректно — все дни включены, ни один не пропущен. Проверить счёт дважды. Депозит от Заказчика (100 000 руб. / 1 000 EUR) перечислен до приезда коллектива в город. Возвращается только при отсутствии нарушений — после выезда артиста. Остаток суточных Заказчику не возвращается (п. 11.2 райдера). У ТМ всегда есть личный запас наличных на мелкие расходы.</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 1.5 -->
+      <div class="section" id="s-1-5">
+        <div class="section-head" onclick="toggleSection('s-1-5')">
+          <div class="section-idx">1.5</div>
+          <div class="section-title">Состав команды и стандарты поведения</div>
+          <div class="section-role role-both">КД + ТМ</div>
+          <div class="section-arrow">▼</div>
+        </div>
+        <div class="section-body">
+          <div class="reglament">
+            <p>КД утверждает организационный и технический персонал. Артист — творческий состав и личную охрану. Состав фиксируется не позднее чем за 10 дней до мероприятия. Брифинг проводится перед каждым мероприятием, даже если состав постоянный.</p>
+          </div>
+          <div class="subs">
+            <div class="sub" id="sub-1-5-1">
+              <div class="sub-head" onclick="toggleSub('sub-1-5-1')">
+                <div class="sub-bullet"></div>
+                <div class="sub-title">Дресс-код и внешняя линия поведения</div>
+                <div class="sub-arrow">▼</div>
+              </div>
+              <div class="sub-body">
+                <div class="sub-text">Дресс-код на всех мероприятиях — total black. На любой вопрос от посторонних: «Я помогаю [Артисту]. Я записал(а) ваш вопрос и передам.» — повторять дословно, хоть 5 раз. При агрессии: «Стесняюсь спросить — с какой целью интересуетесь?» Никаких переговоров с незнакомыми лицами о деталях тура. Без алкоголя в концертные дни — даже если предлагают коллеги. Минимум информации о себе и команде в разговорах с посторонними.</div>
+              </div>
+            </div>
+            <div class="sub" id="sub-1-5-2">
+              <div class="sub-head" onclick="toggleSub('sub-1-5-2')">
+                <div class="sub-bullet"></div>
+                <div class="sub-title">Операционный стандарт ТМ</div>
+                <div class="sub-arrow">▼</div>
+              </div>
+              <div class="sub-body">
+                <div class="sub-text">Артист не выходит по расписанию самостоятельно — за ним приходят лично, входят в номер, забирают. Тайминг составляется так, чтобы исключить бег, быстрый шаг и суету. ТМ разбивает задачи до минимальных подзадач, сдаёт результат с финальной проверкой всего списка. В кризисе: выслушать → зафиксировать → предложить решение → реализовать. Истерика и перекладывание ответственности недопустимы. ТМ сам ставит себе задачи — никто напоминать не будет о повторяющихся процессах.</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 1.6 -->
+      <div class="section" id="s-1-6">
+        <div class="section-head" onclick="toggleSection('s-1-6')">
+          <div class="section-idx">1.6</div>
+          <div class="section-title">Финальный бриф перед выездом</div>
+          <div class="section-role role-tm">Тур-менеджер</div>
+          <div class="section-arrow">▼</div>
+        </div>
+        <div class="section-body">
+          <div class="reglament">
+            <p>Формируется за 24 часа до отъезда, рассылается всем участникам письменно в TG. Это не пересказ — финальная сверка: все позиции закрыты, все знают план.</p>
+          </div>
+          <div class="subs">
+            <div class="sub" id="sub-1-6-1">
+              <div class="sub-head" onclick="toggleSub('sub-1-6-1')">
+                <div class="sub-bullet"></div>
+                <div class="sub-title">Что входит в финальный бриф</div>
+                <div class="sub-arrow">▼</div>
+              </div>
+              <div class="sub-body">
+                <div class="sub-text">Тайм-лист дня по часам · Состав поездки поимённо · Все контакты: Заказчик, площадка, водители, начальник охраны · Данные рейса и тайминг вылета · Гостевые списки · Суточные — кто сколько получает · Штатив и съёмочное оборудование взяты · Инэиры фронтмена — где находятся · Нерешённые вопросы и ответственный · Ссылка на папку мероприятия</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <div class="block b2" id="block-2">
+    <div class="block-head" onclick="toggleBlock('block-2')">
+      <div class="block-num">2</div>
+      <div class="block-title">Day of show</div>
+      <div class="block-meta">прибытие → шоу → выезд</div>
+      <div class="block-arrow">▶</div>
+    </div>
+    <div class="block-body">
+
+      <div class="section" id="s-2-1">
+        <div class="section-head" onclick="toggleSection('s-2-1')">
+          <div class="section-idx">2.1</div>
+          <div class="section-title">Прибытие и заселение</div>
+          <div class="section-role role-tm">Тур-менеджер</div>
+          <div class="section-arrow">▼</div>
+        </div>
+        <div class="section-body">
+          <div class="reglament">
+            <p>Тур-менеджер встречает первым, организует движение группы, контролирует заселение. Суточные выдаются в первый день пребывания. Тур-менеджер всегда имеет небольшой запас наличных для мелких расходов.</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="section" id="s-2-2">
+        <div class="section-head" onclick="toggleSection('s-2-2')">
+          <div class="section-idx">2.2</div>
+          <div class="section-title">Приём площадки</div>
+          <div class="section-role role-tm">Тур-менеджер</div>
+          <div class="section-arrow">▼</div>
+        </div>
+        <div class="section-body">
+          <div class="reglament">
+            <p>Тур-менеджер прибывает на площадку раньше коллектива. Проверяет гримёрки, питание, охрану по чеклисту бытового райдера. Фиксирует все отклонения фото/видео. Проход коллектива на площадку — только через служебный вход, в кольце охраны (не менее 4 охранников).</p>
+          </div>
+          <div class="subs">
+            <div class="sub" id="sub-2-2-1">
+              <div class="sub-head" onclick="toggleSub('sub-2-2-1')">
+                <div class="sub-bullet"></div>
+                <div class="sub-title">Безусловные требования до выхода на сцену</div>
+                <div class="sub-arrow">▼</div>
+              </div>
+              <div class="sub-body">
+                <div class="sub-text">Барьеры перед сценой установлены · Охрана по бокам сцены проинструктирована · Медицинская бригада и скорая на месте · Лед-лента на всех ступенях к сцене · Электробезопасность проверена · Служебный выход свободен. При невыполнении любого из этих пунктов — выступление не начинается.</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="section" id="s-2-3">
+        <div class="section-head" onclick="toggleSection('s-2-3')">
+          <div class="section-idx">2.3</div>
+          <div class="section-title">Саундчек</div>
+          <div class="section-role role-both">ТМ + тех. персонал</div>
+          <div class="section-arrow">▼</div>
+        </div>
+        <div class="section-body">
+          <div class="reglament">
+            <p>Технический персонал (звук, свет, монитор) работает по своим регламентам. Тур-менеджер координирует тайминг, обеспечивает комфорт артиста, фиксирует время начала и окончания. Саундчек начинается строго по тайм-листу — его срыв сдвигает весь последующий график.</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="section" id="s-2-4">
+        <div class="section-head" onclick="toggleSection('s-2-4')">
+          <div class="section-idx">2.4</div>
+          <div class="section-title">Шоу</div>
+          <div class="section-role role-all">Все роли</div>
+          <div class="section-arrow">▼</div>
+        </div>
+        <div class="section-body">
+          <div class="reglament">
+            <p>Тур-менеджер находится за кулисами. Следит за таймингом, готовит выход, коммуницирует с площадкой. Охрана контролирует периметр сцены и бэкстейдж — никто из зрителей не допускается. Съёмка курируется только с прямого подтверждения артиста.</p>
+            <p>В кризисной ситуации на шоу: выслушать, зафиксировать, предложить решение, реализовать. Истерика и перекладывание ответственности недопустимы.</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="section" id="s-2-5">
+        <div class="section-head" onclick="toggleSection('s-2-5')">
+          <div class="section-idx">2.5</div>
+          <div class="section-title">Выезд с площадки</div>
+          <div class="section-role role-tm">Тур-менеджер</div>
+          <div class="section-arrow">▼</div>
+        </div>
+        <div class="section-body">
+          <div class="reglament">
+            <p>Сразу после выступления охрана сопровождает коллектив от сцены до машины без контакта с посетителями. Технический персонал выезжает первым, до основного коллектива — это стандарт. Охрана остаётся у гримёрки до тех пор, пока вся команда не покинула площадку с вещами.</p>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════ БЛОК 3 -->
+  <div class="block b3" id="block-3">
+    <div class="block-head" onclick="toggleBlock('block-3')">
+      <div class="block-num">3</div>
+      <div class="block-title">Post-show</div>
+      <div class="block-meta">закрытие, финансы, разбор</div>
+      <div class="block-arrow">▶</div>
+    </div>
+    <div class="block-body">
+
+      <div class="section" id="s-3-1">
+        <div class="section-head" onclick="toggleSection('s-3-1')">
+          <div class="section-idx">3.1</div>
+          <div class="section-title">Финальный расчёт</div>
+          <div class="section-role role-kd">Конц. директор</div>
+          <div class="section-arrow">▼</div>
+        </div>
+        <div class="section-body">
+          <div class="reglament">
+            <p>Остаток гонорара получается в соответствии с договором. Если остаток выплачивается наличными в день шоу — тур-менеджер фиксирует получение и немедленно уведомляет концертного директора. Все расходы, понесённые тур-менеджером за счёт личных средств по запросу артиста, возмещаются в течение 10 рабочих дней при предоставлении подтверждающих документов.</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="section" id="s-3-2">
+        <div class="section-head" onclick="toggleSection('s-3-2')">
+          <div class="section-idx">3.2</div>
+          <div class="section-title">Закрывающие документы</div>
+          <div class="section-role role-both">КД + ТМ</div>
+          <div class="section-arrow">▼</div>
+        </div>
+        <div class="section-body">
+          <div class="reglament">
+            <p>Акт сдачи-приёмки составляется и подписывается в течение 5 рабочих дней с даты мероприятия. Если от артиста/КД не поступило претензий в течение 5 дней — акт, подписанный тур-менеджером в одностороннем порядке, считается действительным.</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="section" id="s-3-3">
+        <div class="section-head" onclick="toggleSection('s-3-3')">
+          <div class="section-idx">3.3</div>
+          <div class="section-title">Разбор ошибок и обратная связь</div>
+          <div class="section-role role-both">КД + ТМ</div>
+          <div class="section-arrow">▼</div>
+        </div>
+        <div class="section-body">
+          <div class="reglament">
+            <p>Разбор проводится не позднее 48 часов после мероприятия — пока детали свежи. Фиксируются: что пошло не по плану, чья зона ответственности, как исправить в следующий раз. Ошибки не замалчиваются — они источник развития стандартов.</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="section" id="s-3-4">
+        <div class="section-head" onclick="toggleSection('s-3-4')">
+          <div class="section-idx">3.4</div>
+          <div class="section-title">Архив материалов</div>
+          <div class="section-role role-tm">Тур-менеджер</div>
+          <div class="section-arrow">▼</div>
+        </div>
+        <div class="section-body">
+          <div class="reglament">
+            <p>В папку мероприятия сохраняются: фото гримёрки и площадки (для референса к следующему шоу), видео выступления, итоговый тайм-лист с отметками об отклонениях, все переписки с заказчиком. Папка закрывается — мероприятие завершено.</p>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+</div>
+
+<div class="footnote">Версия 1.0 · Операционная база агентства · Все роли и регламенты основаны на реальных договорах, райдерах и журнале ошибок</div>
+
+<script>
+  function toggleBlock(id) {
+    const el = document.getElementById(id);
+    el.classList.toggle('open');
+  }
+  function toggleSection(id) {
+    const el = document.getElementById(id);
+    el.classList.toggle('open');
+  }
+  function toggleSub(id) {
+    const el = document.getElementById(id);
+    el.classList.toggle('open');
+  }
+
+  let allOpen = false;
+  function toggleAll() {
+    allOpen = !allOpen;
+    document.querySelectorAll('.block').forEach(b => b.classList.toggle('open', allOpen));
+    document.querySelectorAll('.section').forEach(s => s.classList.toggle('open', allOpen));
+    document.querySelectorAll('.sub').forEach(s => s.classList.toggle('open', allOpen));
+    document.querySelector('.btn-toggle').textContent = allOpen ? 'Свернуть все' : 'Развернуть все';
+  }
+</script>
+</body>
+</html>
