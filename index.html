@@ -6,915 +6,718 @@
 <title>Операционная карта — Агентство</title>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Unbounded:wght@300;400;500&family=JetBrains+Mono:wght@300;400&display=swap');
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#0c0c0c;--bg2:#141414;--bg3:#1a1a1a;--bg4:#222;--bg5:#2a2a2a;
+  --line:rgba(255,255,255,0.06);--line2:rgba(255,255,255,0.11);--line3:rgba(255,255,255,0.18);
+  --text:#ddd9d3;--muted:#7a7773;--faint:#3a3836;
+  --b0:#a78bfa;--b0d:rgba(167,139,250,0.10);
+  --b1:#34d399;--b1d:rgba(52,211,153,0.10);
+  --b2:#fbbf24;--b2d:rgba(251,191,36,0.10);
+  --b3:#f87171;--b3d:rgba(248,113,113,0.10);
+  --bc:#60a5fa;--bcd:rgba(96,165,250,0.10);
+  --edit:#60a5fa;
+}
+html{background:var(--bg);color:var(--text);font-family:'JetBrains Mono',monospace;font-size:13px;line-height:1.65}
+body{max-width:880px;margin:0 auto;padding:0 0 120px}
 
-*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+/* LOCK */
+#lock{position:fixed;inset:0;background:var(--bg);display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:1000;gap:20px}
+.lock-logo{font-size:10px;letter-spacing:.22em;color:var(--muted);text-transform:uppercase}
+.lock-title{font-family:'Unbounded',sans-serif;font-size:20px;font-weight:400}
+.lock-row{display:flex;border:1px solid var(--line3);border-radius:8px;overflow:hidden}
+.lock-input{background:var(--bg3);border:none;color:var(--text);font-family:'JetBrains Mono',monospace;font-size:14px;padding:12px 16px;width:200px;outline:none;letter-spacing:.1em}
+.lock-input::placeholder{color:var(--faint)}
+.lock-btn{background:var(--bg4);border:none;border-left:1px solid var(--line3);color:var(--muted);font-family:'JetBrains Mono',monospace;font-size:12px;padding:12px 16px;cursor:pointer;transition:all .15s}
+.lock-btn:hover{background:var(--bg5);color:var(--text)}
+.lock-err{font-size:11px;color:var(--b3);opacity:0;transition:opacity .2s}
+.lock-err.show{opacity:1}
+.lock-hint{font-size:11px;color:var(--faint)}
 
-:root {
-  --bg:    #0c0c0c;
-  --bg2:   #141414;
-  --bg3:   #1a1a1a;
-  --bg4:   #222222;
-  --bg5:   #2a2a2a;
-  --line:  rgba(255,255,255,0.06);
-  --line2: rgba(255,255,255,0.11);
-  --line3: rgba(255,255,255,0.18);
-  --text:  #ddd9d3;
-  --muted: #7a7773;
-  --faint: #3a3836;
-  --b0: #a78bfa; --b0d: rgba(167,139,250,0.12);
-  --b1: #34d399; --b1d: rgba(52,211,153,0.12);
-  --b2: #fbbf24; --b2d: rgba(251,191,36,0.12);
-  --b3: #f87171; --b3d: rgba(248,113,113,0.12);
-  --edit-accent: #60a5fa;
-}
+/* APP */
+#app{display:none}
 
-html { background: var(--bg); color: var(--text); font-family: 'JetBrains Mono', monospace; font-size: 13px; line-height: 1.65; }
-body { max-width: 860px; margin: 0 auto; padding: 0 0 100px; }
+/* HEADER */
+.hdr{padding:36px 32px 28px;border-bottom:1px solid var(--line);display:flex;align-items:flex-start;justify-content:space-between;gap:16px;flex-wrap:wrap}
+.hdr-eye{font-size:10px;letter-spacing:.2em;color:var(--muted);text-transform:uppercase;margin-bottom:8px}
+.hdr-title{font-family:'Unbounded',sans-serif;font-size:20px;font-weight:400}
+.hdr-sub{font-size:11px;color:var(--muted);margin-top:5px}
+.toolbar{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.btn{font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:.04em;padding:7px 13px;border-radius:6px;border:1px solid var(--line2);background:var(--bg3);color:var(--muted);cursor:pointer;transition:all .15s;white-space:nowrap}
+.btn:hover{background:var(--bg4);color:var(--text);border-color:var(--line3)}
+.btn.accent{color:var(--edit);border-color:rgba(96,165,250,.3)}
+.btn.accent:hover{background:rgba(96,165,250,.08)}
+.btn.green{color:var(--b1);border-color:rgba(52,211,153,.3);display:none}
+.btn.green:hover{background:rgba(52,211,153,.08)}
+.edit-mode .btn.green{display:inline-block}
+.edit-mode .btn.accent{background:rgba(96,165,250,.08)}
 
-/* ── PASSWORD SCREEN ── */
-#lock-screen {
-  position: fixed; inset: 0; background: var(--bg);
-  display: flex; flex-direction: column; align-items: center; justify-content: center;
-  z-index: 1000; gap: 24px;
-}
-.lock-logo { font-family: 'Unbounded', sans-serif; font-size: 11px; font-weight: 300; letter-spacing: 0.25em; color: var(--muted); text-transform: uppercase; }
-.lock-title { font-family: 'Unbounded', sans-serif; font-size: 20px; font-weight: 400; color: var(--text); }
-.lock-form { display: flex; gap: 0; border: 1px solid var(--line3); border-radius: 8px; overflow: hidden; }
-.lock-input {
-  background: var(--bg3); border: none; color: var(--text);
-  font-family: 'JetBrains Mono', monospace; font-size: 14px;
-  padding: 12px 16px; width: 220px; outline: none; letter-spacing: 0.1em;
-}
-.lock-input::placeholder { color: var(--faint); }
-.lock-btn {
-  background: var(--bg4); border: none; border-left: 1px solid var(--line3);
-  color: var(--muted); font-family: 'JetBrains Mono', monospace; font-size: 12px;
-  padding: 12px 18px; cursor: pointer; transition: all 0.15s;
-}
-.lock-btn:hover { background: var(--bg5); color: var(--text); }
-.lock-error { font-size: 11px; color: var(--b3); opacity: 0; transition: opacity 0.2s; }
-.lock-error.show { opacity: 1; }
-.lock-hint { font-size: 11px; color: var(--faint); }
+/* NAV TABS */
+.nav{display:flex;gap:0;padding:0 32px;border-bottom:1px solid var(--line);overflow-x:auto}
+.nav-tab{font-size:11px;letter-spacing:.06em;padding:12px 16px;cursor:pointer;color:var(--muted);border-bottom:2px solid transparent;transition:all .15s;white-space:nowrap;user-select:none}
+.nav-tab:hover{color:var(--text)}
+.nav-tab.active{color:var(--text);border-bottom-color:var(--text)}
 
-/* ── MAIN APP (hidden until unlocked) ── */
-#app { display: none; }
+/* LEGEND */
+.legend{display:flex;gap:16px;flex-wrap:wrap;padding:14px 32px;border-bottom:1px solid var(--line)}
+.li{display:flex;align-items:center;gap:6px;font-size:10px;color:var(--muted);letter-spacing:.07em}
+.ld{width:6px;height:6px;border-radius:50%;flex-shrink:0}
 
-/* ── HEADER ── */
-.hdr {
-  padding: 40px 32px 32px;
-  border-bottom: 1px solid var(--line);
-  display: flex; align-items: flex-start; justify-content: space-between; gap: 20px;
-}
-.hdr-left {}
-.hdr-eyebrow { font-size: 10px; font-weight: 300; letter-spacing: 0.22em; color: var(--muted); text-transform: uppercase; margin-bottom: 10px; }
-.hdr-title { font-family: 'Unbounded', sans-serif; font-size: 20px; font-weight: 400; color: var(--text); }
-.hdr-sub { font-size: 11px; color: var(--muted); margin-top: 6px; letter-spacing: 0.05em; }
+/* SECTIONS */
+.tab-panel{display:none;padding:24px 32px;flex-direction:column;gap:8px}
+.tab-panel.active{display:flex}
 
-/* ── TOOLBAR ── */
-.toolbar {
-  display: flex; gap: 8px; align-items: center; flex-shrink: 0; flex-wrap: wrap; justify-content: flex-end;
-}
-.btn {
-  font-family: 'JetBrains Mono', monospace; font-size: 11px; letter-spacing: 0.05em;
-  padding: 7px 14px; border-radius: 6px; border: 1px solid var(--line2);
-  background: var(--bg3); color: var(--muted); cursor: pointer; transition: all 0.15s;
-  white-space: nowrap;
-}
-.btn:hover { background: var(--bg4); color: var(--text); border-color: var(--line3); }
-.btn.primary { background: var(--bg4); color: var(--edit-accent); border-color: rgba(96,165,250,0.3); }
-.btn.primary:hover { background: rgba(96,165,250,0.1); color: #93c5fd; }
-.btn.save { background: rgba(52,211,153,0.1); color: var(--b1); border-color: rgba(52,211,153,0.3); display: none; }
-.btn.save:hover { background: rgba(52,211,153,0.2); }
-.edit-mode .btn.save { display: inline-block; }
-.edit-mode .btn.edit-toggle { background: rgba(96,165,250,0.1); color: #93c5fd; border-color: rgba(96,165,250,0.4); }
+/* BLOCK */
+.block{border:1px solid var(--line);border-radius:10px;overflow:hidden;transition:border-color .2s}
+.block.open{border-color:var(--line2)}
+.bh{display:flex;align-items:center;gap:12px;padding:14px 17px;cursor:pointer;background:var(--bg2);transition:background .15s;user-select:none}
+.bh:hover,.block.open .bh{background:var(--bg3)}
+.bnum{font-family:'Unbounded',sans-serif;font-size:10px;font-weight:500;width:27px;height:27px;border-radius:6px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.btitle{font-family:'Unbounded',sans-serif;font-size:11px;font-weight:400;flex:1}
+.bmeta{font-size:10px;color:var(--muted)}
+.barr{color:var(--faint);font-size:9px;transition:transform .25s;flex-shrink:0}
+.block.open .barr{transform:rotate(90deg)}
+.bbody{display:none;border-top:1px solid var(--line)}
+.block.open .bbody{display:block}
+.b0 .bnum{background:var(--b0d);color:var(--b0)}.b0 .btitle{color:var(--b0)}.b0.open{border-color:rgba(167,139,250,.2)}
+.b1 .bnum{background:var(--b1d);color:var(--b1)}.b1 .btitle{color:var(--b1)}.b1.open{border-color:rgba(52,211,153,.2)}
+.b2 .bnum{background:var(--b2d);color:var(--b2)}.b2 .btitle{color:var(--b2)}.b2.open{border-color:rgba(251,191,36,.2)}
+.b3 .bnum{background:var(--b3d);color:var(--b3)}.b3 .btitle{color:var(--b3)}.b3.open{border-color:rgba(248,113,113,.2)}
 
-/* ── LEGEND ── */
-.legend { display: flex; gap: 18px; flex-wrap: wrap; padding: 16px 32px; border-bottom: 1px solid var(--line); }
-.legend-item { display: flex; align-items: center; gap: 6px; font-size: 10px; color: var(--muted); letter-spacing: 0.08em; }
-.ldot { width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; }
+/* FLOW */
+.flow-wrap{padding:18px 18px 4px;border-bottom:1px solid var(--line);background:var(--bg2)}
+.flow-label{font-size:9px;letter-spacing:.18em;color:var(--faint);text-transform:uppercase;margin-bottom:12px}
+.flow{display:flex;align-items:stretch;overflow-x:auto;padding-bottom:14px;gap:0}
+.flow::-webkit-scrollbar{height:2px}.flow::-webkit-scrollbar-thumb{background:var(--faint);border-radius:1px}
+.fn{display:flex;flex-direction:column;align-items:center;gap:5px;min-width:105px;max-width:125px;flex-shrink:0}
+.fn-box{width:100%;border-radius:7px;border:1px solid var(--line2);background:var(--bg3);padding:9px 9px 8px;text-align:center}
+.fn:hover .fn-box{border-color:var(--line3)}
+.fn-icon{font-size:13px;margin-bottom:3px}
+.fn-title{font-size:10px;color:var(--text);line-height:1.35}
+.fn-sub{font-size:9px;color:var(--muted);margin-top:2px;line-height:1.3}
+.fn-res{font-size:9px;color:var(--b1);margin-top:2px}
+.farr{display:flex;align-items:center;justify-content:center;flex-shrink:0;width:24px;color:var(--faint);font-size:11px;align-self:center;margin-top:-12px}
+.fbr{display:flex;flex-direction:column;gap:2px;align-self:center;margin-top:-12px;width:24px;align-items:center}
+.fn.start .fn-box{border-color:rgba(167,139,250,.3);background:rgba(167,139,250,.05)}
+.fn.end .fn-box{border-color:rgba(52,211,153,.3);background:rgba(52,211,153,.05)}
+.fn.dec .fn-box{border-style:dashed;background:var(--bg4)}
 
-/* ── TREE ── */
-.tree { padding: 24px 32px; display: flex; flex-direction: column; gap: 8px; }
+/* SECTION */
+.sec{border-bottom:1px solid var(--line)}.sec:last-child{border-bottom:none}
+.sh{display:flex;align-items:center;gap:10px;padding:11px 17px 11px 50px;cursor:pointer;background:var(--bg2);transition:background .15s;user-select:none}
+.sh:hover,.sec.open .sh{background:var(--bg3)}
+.six{font-size:10px;color:var(--faint);font-family:'Unbounded',sans-serif;font-weight:300;width:24px;flex-shrink:0}
+.stitle{font-size:12px;color:var(--text);flex:1}
+.srole{font-size:9px;color:var(--muted);border:1px solid var(--line2);border-radius:20px;padding:2px 8px;flex-shrink:0;white-space:nowrap;letter-spacing:.04em}
+.role-kd{color:var(--b0);border-color:rgba(167,139,250,.25)}
+.role-tm{color:var(--b1);border-color:rgba(52,211,153,.25)}
+.role-both{color:var(--b2);border-color:rgba(251,191,36,.25)}
+.role-all{color:var(--b3);border-color:rgba(248,113,113,.25)}
+.sarr{font-size:8px;color:var(--faint);transition:transform .2s;flex-shrink:0}
+.sec.open .sarr{transform:rotate(180deg)}
+.sb{display:none;padding:0 17px 14px 50px;background:var(--bg2)}
+.sec.open .sb{display:block}
+.reg{font-size:12px;color:#a8a5a0;line-height:1.8;padding:12px 0 8px;border-top:1px solid var(--line)}
+.reg p{margin-bottom:7px}.reg p:last-child{margin-bottom:0}
+.subs{margin-top:8px;display:flex;flex-direction:column;gap:3px}
+.sub-h{display:flex;align-items:flex-start;gap:9px;padding:8px 11px;border-radius:6px;background:var(--bg3);border:1px solid transparent;cursor:pointer;transition:all .15s}
+.sub-h:hover{border-color:var(--line2)}
+.sub.open .sub-h{border-color:var(--line2);background:var(--bg4)}
+.sub-dot{width:4px;height:4px;border-radius:50%;background:var(--faint);margin-top:5px;flex-shrink:0}
+.sub-t{font-size:11px;color:var(--text);flex:1}
+.sub-a{font-size:8px;color:var(--faint);transition:transform .2s;margin-top:2px;flex-shrink:0}
+.sub.open .sub-a{transform:rotate(180deg)}
+.sub-b{display:none;padding:7px 11px 2px 23px}
+.sub.open .sub-b{display:block}
+.sub-text{font-size:11px;color:var(--muted);line-height:1.75}
+.stop{color:var(--b3);font-weight:500}
+.crit{color:var(--b3)}
 
-/* ── BLOCK ── */
-.block { border: 1px solid var(--line); border-radius: 10px; overflow: hidden; transition: border-color 0.2s; }
-.block.open { border-color: var(--line2); }
-.block-head {
-  display: flex; align-items: center; gap: 14px; padding: 15px 18px;
-  cursor: pointer; background: var(--bg2); transition: background 0.15s; user-select: none;
-}
-.block-head:hover { background: var(--bg3); }
-.block.open .block-head { background: var(--bg3); }
-.block-num {
-  font-family: 'Unbounded', sans-serif; font-size: 10px; font-weight: 500;
-  width: 28px; height: 28px; border-radius: 6px;
-  display: flex; align-items: center; justify-content: center; flex-shrink: 0;
-}
-.block-title { font-family: 'Unbounded', sans-serif; font-size: 11px; font-weight: 400; flex: 1; }
-.block-meta { font-size: 10px; color: var(--muted); }
-.block-arrow { color: var(--faint); font-size: 9px; transition: transform 0.25s; flex-shrink: 0; }
-.block.open .block-arrow { transform: rotate(90deg); }
-.block-body { display: none; border-top: 1px solid var(--line); }
-.block.open .block-body { display: block; }
+/* ── CHECKLISTS ── */
+.cl-block{border:1px solid var(--line);border-radius:10px;overflow:hidden;margin-bottom:8px}
+.cl-head{display:flex;align-items:center;gap:12px;padding:13px 17px;cursor:pointer;background:var(--bg2);transition:background .15s;user-select:none;border-bottom:1px solid var(--line)}
+.cl-head:hover{background:var(--bg3)}
+.cl-ico{font-size:14px;flex-shrink:0}
+.cl-title{font-family:'Unbounded',sans-serif;font-size:11px;font-weight:400;flex:1}
+.cl-count{font-size:10px;color:var(--muted);background:var(--bg3);border:1px solid var(--line2);padding:2px 8px;border-radius:12px}
+.cl-arr{font-size:9px;color:var(--faint);transition:transform .25s}
+.cl-block.open .cl-arr{transform:rotate(90deg)}
+.cl-body{display:none;background:var(--bg2)}
+.cl-block.open .cl-body{display:block}
+.cl-group{border-bottom:1px solid var(--line);padding:14px 17px}
+.cl-group:last-child{border-bottom:none}
+.cl-group-title{font-size:10px;letter-spacing:.12em;color:var(--muted);text-transform:uppercase;margin-bottom:10px}
+.cl-item{display:flex;align-items:flex-start;gap:10px;padding:5px 0}
+.cl-item+.cl-item{border-top:1px solid var(--line)}
+.cl-cb{position:relative;flex-shrink:0;margin-top:1px}
+.cl-cb input{position:absolute;opacity:0;width:0;height:0}
+.cl-cb label{display:flex;align-items:center;justify-content:center;width:16px;height:16px;border:1px solid var(--line3);border-radius:4px;cursor:pointer;transition:all .15s;background:var(--bg3)}
+.cl-cb input:checked+label{background:var(--b1);border-color:var(--b1)}
+.cl-cb input:checked+label::after{content:'✓';font-size:10px;color:#0c0c0c;font-weight:700}
+.cl-item-text{font-size:12px;color:var(--text);flex:1;line-height:1.6}
+.cl-item.checked .cl-item-text{color:var(--faint);text-decoration:line-through;text-decoration-color:var(--faint)}
+.cl-note{font-size:10px;color:var(--muted);margin-top:2px}
+.cl-warn{display:inline;color:var(--b3)}
+.cl-reset{display:flex;justify-content:flex-end;padding:10px 17px 14px;border-top:1px solid var(--line)}
+.cl-reset-btn{font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--muted);background:none;border:1px solid var(--line2);border-radius:6px;padding:5px 11px;cursor:pointer;transition:all .15s}
+.cl-reset-btn:hover{color:var(--text);border-color:var(--line3)}
+.cl-progress{height:2px;background:var(--line);position:relative;overflow:hidden}
+.cl-progress-bar{height:100%;background:var(--b1);transition:width .3s;width:0}
 
-/* Block colors */
-.b0 .block-num { background: var(--b0d); color: var(--b0); }
-.b0 .block-title { color: var(--b0); }
-.b0.open { border-color: rgba(167,139,250,0.2); }
-.b1 .block-num { background: var(--b1d); color: var(--b1); }
-.b1 .block-title { color: var(--b1); }
-.b1.open { border-color: rgba(52,211,153,0.2); }
-.b2 .block-num { background: var(--b2d); color: var(--b2); }
-.b2 .block-title { color: var(--b2); }
-.b2.open { border-color: rgba(251,191,36,0.2); }
-.b3 .block-num { background: var(--b3d); color: var(--b3); }
-.b3 .block-title { color: var(--b3); }
-.b3.open { border-color: rgba(248,113,113,0.2); }
+/* EDIT MODE */
+.edit-mode [contenteditable]{outline:none;background:rgba(96,165,250,.05);border-radius:3px;box-shadow:inset 0 0 0 1px rgba(96,165,250,.2);padding:1px 3px;margin:-1px -3px;cursor:text}
+.edit-mode [contenteditable]:focus{box-shadow:inset 0 0 0 1px rgba(96,165,250,.5);background:rgba(96,165,250,.08)}
+.edit-badge{display:none;position:fixed;bottom:22px;right:22px;background:rgba(96,165,250,.1);border:1px solid rgba(96,165,250,.3);color:var(--edit);font-size:10px;letter-spacing:.1em;padding:7px 13px;border-radius:20px;pointer-events:none}
+.edit-mode .edit-badge{display:block}
 
-/* ── PROCESS FLOW ── */
-.flow-wrap {
-  padding: 20px 20px 4px;
-  border-bottom: 1px solid var(--line);
-  background: var(--bg2);
-}
-.flow-label { font-size: 9px; letter-spacing: 0.18em; color: var(--faint); text-transform: uppercase; margin-bottom: 14px; }
-.flow { display: flex; align-items: stretch; gap: 0; overflow-x: auto; padding-bottom: 16px; }
-.flow::-webkit-scrollbar { height: 3px; }
-.flow::-webkit-scrollbar-track { background: var(--bg3); }
-.flow::-webkit-scrollbar-thumb { background: var(--faint); border-radius: 2px; }
-
-.fnode {
-  display: flex; flex-direction: column; align-items: center; gap: 6px;
-  min-width: 110px; max-width: 130px; flex-shrink: 0; position: relative;
-}
-.fnode-box {
-  width: 100%; border-radius: 7px; border: 1px solid var(--line2);
-  background: var(--bg3); padding: 10px 10px 9px;
-  text-align: center; transition: border-color 0.15s;
-}
-.fnode:hover .fnode-box { border-color: var(--line3); }
-.fnode-icon { font-size: 14px; margin-bottom: 4px; }
-.fnode-title { font-size: 10px; font-weight: 400; color: var(--text); line-height: 1.4; }
-.fnode-sub { font-size: 9px; color: var(--muted); margin-top: 3px; line-height: 1.35; }
-.fnode-result { font-size: 9px; color: var(--b1); margin-top: 2px; }
-
-.farrow {
-  display: flex; align-items: center; justify-content: center;
-  flex-shrink: 0; width: 28px; color: var(--faint); font-size: 12px;
-  align-self: center; margin-top: -14px;
-}
-.fbranch { display: flex; flex-direction: column; gap: 4px; align-self: center; margin-top: -14px; }
-.fbranch-yes { font-size: 8px; color: var(--b1); letter-spacing: 0.08em; }
-.fbranch-no { font-size: 8px; color: var(--b3); letter-spacing: 0.08em; }
-
-.fnode.decision .fnode-box {
-  background: var(--bg4); border-style: dashed;
-  clip-path: none;
-}
-.fnode.start .fnode-box { border-color: rgba(167,139,250,0.3); background: rgba(167,139,250,0.06); }
-.fnode.end .fnode-box { border-color: rgba(52,211,153,0.3); background: rgba(52,211,153,0.06); }
-.fnode.warn .fnode-box { border-color: rgba(248,113,113,0.3); background: rgba(248,113,113,0.06); }
-
-/* ── SECTION ── */
-.section { border-bottom: 1px solid var(--line); }
-.section:last-child { border-bottom: none; }
-.section-head {
-  display: flex; align-items: center; gap: 10px;
-  padding: 12px 18px 12px 54px; cursor: pointer;
-  background: var(--bg2); transition: background 0.15s; user-select: none;
-}
-.section-head:hover { background: var(--bg3); }
-.section.open .section-head { background: var(--bg3); }
-.section-idx { font-size: 10px; color: var(--faint); font-family: 'Unbounded', sans-serif; font-weight: 300; width: 26px; flex-shrink: 0; }
-.section-title { font-size: 12px; color: var(--text); flex: 1; }
-.section-role {
-  font-size: 9px; color: var(--muted); border: 1px solid var(--line2);
-  border-radius: 20px; padding: 2px 9px; flex-shrink: 0; white-space: nowrap; letter-spacing: 0.05em;
-}
-.role-kd { color: var(--b0); border-color: rgba(167,139,250,0.25); }
-.role-tm { color: var(--b1); border-color: rgba(52,211,153,0.25); }
-.role-both { color: var(--b2); border-color: rgba(251,191,36,0.25); }
-.role-all { color: var(--b3); border-color: rgba(248,113,113,0.25); }
-.section-arrow { font-size: 8px; color: var(--faint); transition: transform 0.2s; flex-shrink: 0; }
-.section.open .section-arrow { transform: rotate(180deg); }
-.section-body { display: none; padding: 0 18px 16px 54px; background: var(--bg2); }
-.section.open .section-body { display: block; }
-
-/* ── REGLAMENT ── */
-.reglament {
-  font-size: 12px; color: #a8a5a0; line-height: 1.8;
-  padding: 14px 0 10px; border-top: 1px solid var(--line);
-}
-.reglament p { margin-bottom: 8px; }
-.reglament p:last-child { margin-bottom: 0; }
-
-/* ── SUBS ── */
-.subs { margin-top: 10px; display: flex; flex-direction: column; gap: 4px; }
-.sub-head {
-  display: flex; align-items: flex-start; gap: 10px; padding: 9px 12px;
-  border-radius: 6px; background: var(--bg3); border: 1px solid transparent;
-  cursor: pointer; transition: all 0.15s;
-}
-.sub-head:hover { border-color: var(--line2); }
-.sub.open .sub-head { border-color: var(--line2); background: var(--bg4); }
-.sub-bullet { width: 4px; height: 4px; border-radius: 50%; background: var(--faint); margin-top: 5px; flex-shrink: 0; }
-.sub-title { font-size: 11px; color: var(--text); flex: 1; }
-.sub-arrow { font-size: 8px; color: var(--faint); transition: transform 0.2s; margin-top: 2px; flex-shrink: 0; }
-.sub.open .sub-arrow { transform: rotate(180deg); }
-.sub-body { display: none; padding: 8px 12px 2px 24px; }
-.sub.open .sub-body { display: block; }
-.sub-text { font-size: 11px; color: var(--muted); line-height: 1.75; }
-.stop { color: var(--b3); font-weight: 500; }
-
-/* ── EDIT MODE ── */
-.edit-mode [contenteditable] {
-  outline: none;
-  background: rgba(96,165,250,0.05);
-  border-radius: 3px;
-  box-shadow: inset 0 0 0 1px rgba(96,165,250,0.2);
-  padding: 1px 3px; margin: -1px -3px;
-  cursor: text;
-  transition: box-shadow 0.15s;
-}
-.edit-mode [contenteditable]:focus {
-  box-shadow: inset 0 0 0 1px rgba(96,165,250,0.5);
-  background: rgba(96,165,250,0.08);
-}
-.edit-badge {
-  display: none; position: fixed; bottom: 24px; right: 24px;
-  background: rgba(96,165,250,0.12); border: 1px solid rgba(96,165,250,0.3);
-  color: var(--edit-accent); font-size: 10px; letter-spacing: 0.1em;
-  padding: 8px 14px; border-radius: 20px; pointer-events: none;
-}
-.edit-mode .edit-badge { display: block; }
-
-/* ── CONTROLS BAR ── */
-.controls { padding: 12px 32px 0; display: flex; justify-content: space-between; align-items: center; }
-.controls-left { font-size: 10px; color: var(--faint); }
+.ctrls{padding:10px 32px 0;display:flex;justify-content:space-between;align-items:center}
+.ctrls-hint{font-size:10px;color:var(--faint)}
 </style>
 </head>
 <body>
 
-<!-- PASSWORD SCREEN -->
-<div id="lock-screen">
-  <div class="lock-logo">Концертное агентство</div>
+<div id="lock">
+  <div class="lock-logo">Концертное агентство · SOP</div>
   <div class="lock-title">Операционная карта</div>
-  <div class="lock-form">
-    <input class="lock-input" type="password" id="lock-input" placeholder="введите пароль" autocomplete="off">
-    <button class="lock-btn" onclick="checkPassword()">войти</button>
+  <div class="lock-row">
+    <input class="lock-input" type="password" id="li" placeholder="пароль" autocomplete="off">
+    <button class="lock-btn" onclick="unlock()">войти</button>
   </div>
-  <div class="lock-error" id="lock-error">неверный пароль</div>
-  <div class="lock-hint">для демо: пароль «1234»</div>
+  <div class="lock-err" id="lerr">неверный пароль</div>
+  <div class="lock-hint">демо: пароль «1234»</div>
 </div>
 
-<!-- MAIN APP -->
 <div id="app">
-
   <div class="hdr">
-    <div class="hdr-left">
-      <div class="hdr-eyebrow">Концертное агентство · SOP</div>
+    <div>
+      <div class="hdr-eye">Концертное агентство · SOP v2</div>
       <div class="hdr-title">Карта процессов</div>
       <div class="hdr-sub">Жизненный цикл мероприятия · от заявки до закрытия</div>
     </div>
     <div class="toolbar">
-      <button class="btn" onclick="toggleAll()">развернуть все</button>
-      <button class="btn primary edit-toggle" onclick="toggleEdit()">✎ режим редактора</button>
-      <button class="btn save" onclick="saveFile()">↓ сохранить файл</button>
+      <button class="btn" onclick="expandAll()">развернуть все</button>
+      <button class="btn accent" onclick="toggleEdit()">✎ редактор</button>
+      <button class="btn green" onclick="saveFile()">↓ сохранить файл</button>
     </div>
+  </div>
+
+  <div class="nav">
+    <div class="nav-tab active" onclick="switchTab('regs',this)">Регламенты</div>
+    <div class="nav-tab" onclick="switchTab('checks',this)">Чек-листы</div>
   </div>
 
   <div class="legend">
-    <div class="legend-item"><span class="ldot" style="background:#a78bfa"></span>концертный директор</div>
-    <div class="legend-item"><span class="ldot" style="background:#34d399"></span>тур-менеджер</div>
-    <div class="legend-item"><span class="ldot" style="background:#fbbf24"></span>кд + тм совместно</div>
-    <div class="legend-item"><span class="ldot" style="background:#f87171"></span>все роли</div>
-    <div class="legend-item"><span class="ldot" style="background:#60a5fa"></span>охрана / тех. персонал</div>
+    <div class="li"><span class="ld" style="background:#a78bfa"></span>концертный директор</div>
+    <div class="li"><span class="ld" style="background:#34d399"></span>тур-менеджер</div>
+    <div class="li"><span class="ld" style="background:#fbbf24"></span>кд + тм</div>
+    <div class="li"><span class="ld" style="background:#f87171"></span>все роли</div>
+    <div class="li"><span class="ld" style="background:#60a5fa"></span>охрана / тех</div>
   </div>
 
-  <div class="controls">
-    <div class="controls-left">нажмите на блок чтобы раскрыть</div>
-    <div></div>
+  <!-- ═══════════════ РЕГЛАМЕНТЫ ═══════════════ -->
+  <div class="tab-panel active" id="tab-regs">
+    <div class="ctrls"><div class="ctrls-hint">нажмите на блок чтобы раскрыть</div></div>
+
+    <!-- БЛОК 0 -->
+    <div class="block b0" id="b0">
+      <div class="bh" onclick="tb('b0')">
+        <div class="bnum">0</div>
+        <div class="btitle" contenteditable="false">Подготовка сделки</div>
+        <div class="bmeta">от заявки до предоплаты</div>
+        <div class="barr">▶</div>
+      </div>
+      <div class="bbody">
+        <div class="flow-wrap"><div class="flow-label">схема процесса</div><div class="flow">
+          <div class="fn start"><div class="fn-box"><div class="fn-icon">📥</div><div class="fn-title">Входящая заявка</div><div class="fn-sub">официальный канал</div></div></div>
+          <div class="farr">→</div>
+          <div class="fn dec"><div class="fn-box"><div class="fn-icon">🔍</div><div class="fn-title">Квалификация</div><div class="fn-sub">бюджет, дата, формат</div></div></div>
+          <div class="fbr"><span style="font-size:8px;color:var(--b1)">ДА →</span><span style="font-size:8px;color:var(--b3)">НЕТ ✕</span></div>
+          <div class="fn"><div class="fn-box"><div class="fn-icon">💬</div><div class="fn-title">Переговоры</div><div class="fn-sub">условия, состав, дата</div></div></div>
+          <div class="farr">→</div>
+          <div class="fn"><div class="fn-box"><div class="fn-icon">🎤</div><div class="fn-title">Одобрение артиста</div><div class="fn-sub">финальное согласие</div></div></div>
+          <div class="farr">→</div>
+          <div class="fn"><div class="fn-box"><div class="fn-icon">✍️</div><div class="fn-title">Договор + райдеры</div><div class="fn-sub">подписание сторон</div></div></div>
+          <div class="farr">→</div>
+          <div class="fn"><div class="fn-box"><div class="fn-icon">💳</div><div class="fn-title">Предоплата</div><div class="fn-sub">поступление на счёт</div></div></div>
+          <div class="farr">→</div>
+          <div class="fn end"><div class="fn-box"><div class="fn-icon">📅</div><div class="fn-title">Бронь + бриф ТМ</div><div class="fn-sub">дата зафиксирована</div><div class="fn-res">→ Блок 1</div></div></div>
+        </div></div>
+
+        <div class="sec" id="s-0-1"><div class="sh" onclick="ts('s-0-1')"><div class="six">0.1</div><div class="stitle" contenteditable="false">Приём заявки и квалификация</div><div class="srole role-kd">конц. директор</div><div class="sarr">▼</div></div><div class="sb"><div class="reg"><p contenteditable="false">Все запросы — только через официальные каналы агентства. Артист переадресует прямые обращения КД. Срок реакции — не позднее 24 часов. Даже если решение ещё не принято — подтвердить получение обязательно.</p></div><div class="subs">
+          <div class="sub" id="sub-0-1-1"><div class="sub-h" onclick="tsub('sub-0-1-1')"><div class="sub-dot"></div><div class="sub-t" contenteditable="false">Что выяснить при первом контакте</div><div class="sub-a">▼</div></div><div class="sub-b"><div class="sub-text" contenteditable="false">По заказчику: кто обращается (организатор или посредник), откуда знает контакты, какие мероприятия проводил ранее.<br><br>По мероприятию: формат (концерт / клабшоу / корпоратив / фестиваль), город, дата, площадка, ожидаемое количество зрителей.<br><br>По бюджету: хотя бы вилка. Если заказчик категорически отказывается — сигнал для осторожности.</div></div></div>
+          <div class="sub" id="sub-0-1-2"><div class="sub-h" onclick="tsub('sub-0-1-2')"><div class="sub-dot"></div><div class="sub-t" contenteditable="false">Стоп-сигналы → вежливый отказ</div><div class="sub-a">▼</div></div><div class="sub-b"><div class="sub-text" contenteditable="false"><span class="stop">✕</span> Заказчик не раскрывает бюджет вообще<br><span class="stop">✕</span> Дата менее 14 дней от текущей<br><span class="stop">✕</span> Формат противоречит текущей политике артиста<br><span class="stop">✕</span> Площадка или страна под ограничениями</div></div></div>
+        </div></div></div>
+
+        <div class="sec" id="s-0-2"><div class="sh" onclick="ts('s-0-2')"><div class="six">0.2</div><div class="stitle" contenteditable="false">Переговоры и согласование условий</div><div class="srole role-kd">конц. директор</div><div class="sarr">▼</div></div><div class="sb"><div class="reg"><p contenteditable="false">Главный переговорный этап, 2–7 дней. Все принципиальные договорённости — только письменно. Устные договорённости не являются основанием для начала подготовки. После подписания изменения райдера, увеличивающие расходы заказчика более чем на 50 000 руб., не являются обязательными.</p></div><div class="subs">
+          <div class="sub" id="sub-0-2-1"><div class="sub-h" onclick="tsub('sub-0-2-1')"><div class="sub-dot"></div><div class="sub-t" contenteditable="false">Что согласовывается</div><div class="sub-a">▼</div></div><div class="sub-b"><div class="sub-text" contenteditable="false">Гонорар (итоговая сумма) · Размер и дата предоплаты · Порядок выплаты остатка · Формат, хронометраж, дата · Состав коллектива · Логистика — за чей счёт · Оба райдера отправлены и подтверждены · Условия при переносе и отмене</div></div></div>
+        </div></div></div>
+
+        <div class="sec" id="s-0-3"><div class="sh" onclick="ts('s-0-3')"><div class="six">0.3</div><div class="stitle" contenteditable="false">Договор и предоплата</div><div class="srole role-kd">конц. директор</div><div class="sarr">▼</div></div><div class="sb"><div class="reg"><p contenteditable="false">Договор направляется заказчику не позднее 48 часов после финального согласования. Оба райдера — неотъемлемые приложения, имеют равную юридическую силу. Поступление предоплаты — единственный триггер перехода в Блок 1. До этого дата не считается забронированной.</p></div></div></div>
+
+        <div class="sec" id="s-0-4"><div class="sh" onclick="ts('s-0-4')"><div class="six">0.4</div><div class="stitle" contenteditable="false">Фиксация и передача тур-менеджеру</div><div class="srole role-both">КД → ТМ</div><div class="sarr">▼</div></div><div class="sb"><div class="reg"><p contenteditable="false">В день поступления предоплаты: дата вносится в мастер-расписание, создаётся папка мероприятия, ТМ получает бриф. В брифе: дата, город, формат, состав, гонорар, контакты, папка, специфические условия. С момента отправки брифа операционная ответственность переходит к ТМ.</p></div></div></div>
+      </div>
+    </div>
+
+    <!-- БЛОК 1 -->
+    <div class="block b1" id="b1">
+      <div class="bh" onclick="tb('b1')">
+        <div class="bnum">1</div>
+        <div class="btitle" contenteditable="false">Pre-show</div>
+        <div class="bmeta">от получения брифа до дня выезда</div>
+        <div class="barr">▶</div>
+      </div>
+      <div class="bbody">
+        <div class="flow-wrap"><div class="flow-label">схема процесса</div><div class="flow">
+          <div class="fn start"><div class="fn-box"><div class="fn-icon">📨</div><div class="fn-title">Бриф от КД</div><div class="fn-sub">предоплата получена</div></div></div>
+          <div class="farr">→</div>
+          <div class="fn"><div class="fn-box"><div class="fn-icon">✈️</div><div class="fn-title">Логистика</div><div class="fn-sub">авиа, отель, трансфер</div></div></div>
+          <div class="farr">→</div>
+          <div class="fn"><div class="fn-box"><div class="fn-icon">📋</div><div class="fn-title">Контроль райдеров</div><div class="fn-sub">бытовой, тех, свет</div></div></div>
+          <div class="farr">→</div>
+          <div class="fn"><div class="fn-box"><div class="fn-icon">👥</div><div class="fn-title">Команда</div><div class="fn-sub">состав, роли, брифинг</div></div></div>
+          <div class="farr">→</div>
+          <div class="fn"><div class="fn-box"><div class="fn-icon">🎟</div><div class="fn-title">Документы</div><div class="fn-sub">акреды, гости, треклист</div></div></div>
+          <div class="farr">→</div>
+          <div class="fn dec"><div class="fn-box"><div class="fn-icon">✅</div><div class="fn-title">Всё закрыто?</div><div class="fn-sub">финальная сверка −24 ч</div></div></div>
+          <div class="fbr"><span style="font-size:8px;color:var(--b1)">ДА →</span><span style="font-size:8px;color:var(--b3)">НЕТ ↺</span></div>
+          <div class="fn end"><div class="fn-box"><div class="fn-icon">🚀</div><div class="fn-title">Финальный бриф</div><div class="fn-sub">рассылка команде</div><div class="fn-res">→ Блок 2</div></div></div>
+        </div></div>
+
+        <div class="sec" id="s-1-1"><div class="sh" onclick="ts('s-1-1')"><div class="six">1.1</div><div class="stitle" contenteditable="false">Авиа и наземная логистика</div><div class="srole role-tm">тур-менеджер</div><div class="sarr">▼</div></div><div class="sb"><div class="reg"><p contenteditable="false">Бронируется сразу после получения брифа. Имена строго по загранпаспортам — скриншот каждого билета в TG. Финансовая ответственность за пропущенный рейс и опоздание лежит на ТМ. «Со мной никто не связался» — недопустимая позиция.</p></div><div class="subs">
+          <div class="sub" id="sub-1-1-1"><div class="sub-h" onclick="tsub('sub-1-1-1')"><div class="sub-dot"></div><div class="sub-t" contenteditable="false">Перелёты</div><div class="sub-a">▼</div></div><div class="sub-b"><div class="sub-text" contenteditable="false">Фронтмен — бизнес, место у прохода. Онлайн-регистрация за 24 ч, посадочный в TG. Доп. багаж, Sky Priority / Fast Track — оплачены. Бонусные карты внесены. Спецпитание заказано при необходимости. ТМ не уходит, пока последний участник не зашёл в зону вылета.</div></div></div>
+          <div class="sub" id="sub-1-1-2"><div class="sub-h" onclick="tsub('sub-1-1-2')"><div class="sub-dot"></div><div class="sub-t" contenteditable="false">Трансфер</div><div class="sub-a">▼</div></div><div class="sub-b"><div class="sub-text" contenteditable="false">1× Maybach + 1× Mercedes V-класс, год не ранее 2020, чёрный. Maybach: 6× вода «Святой Источник», 2× Cola без сахара, 2× Red Bull без сахара, зарядки. V-класс: 8× вода, Cola, Red Bull. Водители предупреждаются лично. Техники — отдельная машина, выезжают раньше коллектива.</div></div></div>
+          <div class="sub" id="sub-1-1-3"><div class="sub-h" onclick="tsub('sub-1-1-3')"><div class="sub-dot"></div><div class="sub-t" contenteditable="false">Оборудование и съёмка</div><div class="sub-a">▼</div></div><div class="sub-b"><div class="sub-text" contenteditable="false">Штатив для технического видео — взят, не забыт ⚠️. Инэиры фронтмена — при нём или у ТМ, не оставлять у DJ. Концертный чемодан — в машине. Продуктовая корзина в поезд/автобус укомплектована.</div></div></div>
+        </div></div></div>
+
+        <div class="sec" id="s-1-2"><div class="sh" onclick="ts('s-1-2')"><div class="six">1.2</div><div class="stitle" contenteditable="false">Отель — подготовка до приезда</div><div class="srole role-tm">тур-менеджер</div><div class="sarr">▼</div></div><div class="sb"><div class="reg"><p contenteditable="false">Отель — международная сеть, рейтинг ≥9.0, 4–5 звёзд. За неделю — подтверждение брони (1× люкс + 9× стандарт king size, все на одном этаже). Ключ-карты готовы до приезда — очередь на стойке недопустима. Из номера фронтмена убираются все «комплименты» отеля.</p></div><div class="subs">
+          <div class="sub" id="sub-1-2-1"><div class="sub-h" onclick="tsub('sub-1-2-1')"><div class="sub-dot"></div><div class="sub-t" contenteditable="false">Проверить до приезда коллектива</div><div class="sub-a">▼</div></div><div class="sub-b"><div class="sub-text" contenteditable="false">Депозиты внесены Заказчиком до приезда. Представитель проверил номера накануне: нет шума, стройки. Мини-бары НЕ закрыты и не очищены. Тренажёрный зал / бассейн открыты. Дубликаты ключ-карт у ТМ. Меню рум-сервиса + номер для заказа — под рукой. Рядом с отелем: аптека + ресторан нужного типа — адреса у ТМ.</div></div></div>
+          <div class="sub" id="sub-1-2-2"><div class="sub-h" onclick="tsub('sub-1-2-2')"><div class="sub-dot"></div><div class="sub-t" contenteditable="false">Наполнение номеров</div><div class="sub-a">▼</div></div><div class="sub-b"><div class="sub-text" contenteditable="false">В каждом номере: кондиционер, Wi-Fi, фен, 5× вода «Святой Источник». Боржоми 0,75л — во все номера кроме номера ТМ. Продуктовая корзина доставлена до приезда. Доп. позиции по запросу — выданы ТМ в руки. Румлист — только в номере ТМ.</div></div></div>
+        </div></div></div>
+
+        <div class="sec" id="s-1-3"><div class="sh" onclick="ts('s-1-3')"><div class="six">1.3</div><div class="stitle" contenteditable="false">Контроль исполнения райдеров</div><div class="srole role-tm">тур-менеджер</div><div class="sarr">▼</div></div><div class="sb"><div class="reg"><p contenteditable="false">ТМ несёт полную личную ответственность за бытовой райдер. По техническому и световому — надзорно-организационная: контролирует, фиксирует, докладывает КД. Самостоятельно технику не исправляет. Не доверяй словам организатора — всё проверяется лично. Оборудование оплачено Заказчиком не позднее чем за 5 дней.</p></div><div class="subs">
+          <div class="sub" id="sub-1-3-1"><div class="sub-h" onclick="tsub('sub-1-3-1')"><div class="sub-dot"></div><div class="sub-t" contenteditable="false">Бытовой райдер — ключевые позиции</div><div class="sub-a">▼</div></div><div class="sub-b"><div class="sub-text" contenteditable="false"><b style="color:var(--text)">Гримёрки:</b> артисту — отдельная с санузлом, ключ у ТМ. Коллективу — отдельная с санузлом. При одной комнате — ширма, таблички «Артист» / «Команда». Фото ДО/ПОСЛЕ накрытия — в базу.<br><br><b style="color:var(--text)">Напитки фронтмена:</b> вода «Святой Источник» 0,5л ×20 без этикеток, крышки открыты · Cola Zero без сахара ×5 — <span class="stop">⚠️ ПРОВЕРИТЬ ДВАЖДЫ</span> · Red Bull без сахара ×5 · Ягодная тарелка (клубника, малина, голубика) · Орехи · Нарезанный лимон · Чай чёрный пакетиками (НЕ заварка) · Hennessy VSOP, красное сухое вино, водка 0,5 · 5 замороженных рюмок · Постные/веганские блюда.<br><br><b style="color:var(--text)">Прочее:</b> 4 больших + 4 средних белых махровых полотенца · Ролик для чистки одежды · Зеркало во весь рост · Ножницы, скотч, тейп · Листы А4 ×20 · Штопор · Зубная нить Oral-B Satin Floss.</div></div></div>
+          <div class="sub" id="sub-1-3-2"><div class="sub-h" onclick="tsub('sub-1-3-2')"><div class="sub-dot"></div><div class="sub-t" contenteditable="false">Сцена — безусловные требования</div><div class="sub-a">▼</div></div><div class="sub-b"><div class="sub-text" contenteditable="false"><span class="crit">Без этого выступления нет:</span><br>· Вся сцена покрыта чёрным ковролином (минимум передняя половина), надёжно закреплён<br>· Лестница на сцену освещена лед-лентой — минимум 3 верхних ступени<br>· Барьеры MOJO перед сценой и пультовой — без «дырок»<br>· Медбригада и скорая: ≥600 зрителей — 1 машина, ≥1000 — 2 машины<br><br>Остальное: сцена расширена подиумами до ≥6×4 м · CO₂-кнопка на диджейке, лишние заклеены тейпом · Дым-машины протестированы на макс. плотность · Вентиляторы для DJ и артиста · FOH закрыт чёрным полиэтиленом · Кабель-менеджмент чистый.</div></div></div>
+        </div></div></div>
+
+        <div class="sec" id="s-1-4"><div class="sh" onclick="ts('s-1-4')"><div class="six">1.4</div><div class="stitle" contenteditable="false">Охрана, аккредитации, документы</div><div class="srole role-tm">тур-менеджер</div><div class="sarr">▼</div></div><div class="sb"><div class="reg"><p contenteditable="false">За 5 дней: схема расстановки охраны (фото-схема с точками постов) + контакт начальника СБ. Минимум на любом мероприятии — 15 охранников. Проход коллектива — только служебный вход, кольцо 4+ охранников. Брифинг команды Заказчика — письменно.</p></div><div class="subs">
+          <div class="sub" id="sub-1-4-1"><div class="sub-h" onclick="tsub('sub-1-4-1')"><div class="sub-dot"></div><div class="sub-t" contenteditable="false">Аккредитации и гости</div><div class="sub-a">▼</div></div><div class="sub-b"><div class="sub-text" contenteditable="false">Москва/СПб — до 100 гостей (≤5% вместимости), регионы — до 50. Хостес встречает. Портфолио фотографа утверждено артистом. Съёмка со сцены — только с прямого разрешения. Пресса: не просить фото, материалы — только после утверждения артистом.</div></div></div>
+          <div class="sub" id="sub-1-4-2"><div class="sub-h" onclick="tsub('sub-1-4-2')"><div class="sub-dot"></div><div class="sub-t" contenteditable="false">Суточные и депозит</div><div class="sub-a">▼</div></div><div class="sub-b"><div class="sub-text" contenteditable="false">Депозит от Заказчика (100 000 руб. / 1 000 EUR) перечислен до приезда коллектива. Возвращается только при отсутствии нарушений — после выезда артиста. Суточные посчитаны корректно — все дни, ни один не пропущен. Остаток суточных Заказчику не возвращается (п. 11.2 райдера). У ТМ всегда есть личные наличные на мелкие расходы.</div></div></div>
+        </div></div></div>
+
+        <div class="sec" id="s-1-5"><div class="sh" onclick="ts('s-1-5')"><div class="six">1.5</div><div class="stitle" contenteditable="false">Стандарты поведения команды</div><div class="srole role-both">КД + ТМ</div><div class="sarr">▼</div></div><div class="sb"><div class="reg"><p contenteditable="false">Дресс-код — total black. На любой вопрос о коллективе: «Я помогаю [Артисту]. Я записал(а) ваш вопрос и передам.» — дословно, хоть 5 раз. Без алкоголя в концертные дни. Минимум информации о себе и команде посторонним. Артист не выходит сам — за ним приходят лично, входят в номер.</p></div></div></div>
+
+        <div class="sec" id="s-1-6"><div class="sh" onclick="ts('s-1-6')"><div class="six">1.6</div><div class="stitle" contenteditable="false">Финальный бриф перед выездом</div><div class="srole role-tm">тур-менеджер</div><div class="sarr">▼</div></div><div class="sb"><div class="reg"><p contenteditable="false">Формируется за 24 часа до отъезда, рассылается всем в TG. Содержание: тайм-лист дня по часам · состав поездки поимённо · все контакты (Заказчик, площадка, водители, начальник СБ) · данные рейса · гостевые списки · суточные (кто сколько) · штатив взят · инэиры фронтмена — где · нерешённые вопросы · ссылка на папку мероприятия.</p></div></div></div>
+      </div>
+    </div>
+
+    <!-- БЛОК 2 -->
+    <div class="block b2" id="b2">
+      <div class="bh" onclick="tb('b2')">
+        <div class="bnum">2</div>
+        <div class="btitle" contenteditable="false">Day of show</div>
+        <div class="bmeta">прибытие → шоу → выезд</div>
+        <div class="barr">▶</div>
+      </div>
+      <div class="bbody">
+        <div class="flow-wrap"><div class="flow-label">схема процесса</div><div class="flow">
+          <div class="fn start"><div class="fn-box"><div class="fn-icon">🌅</div><div class="fn-title">Подъём команды</div><div class="fn-sub">ТМ будит лично каждого</div></div></div>
+          <div class="farr">→</div>
+          <div class="fn"><div class="fn-box"><div class="fn-icon">🚗</div><div class="fn-title">Выезд техников</div><div class="fn-sub">раньше коллектива</div></div></div>
+          <div class="farr">→</div>
+          <div class="fn"><div class="fn-box"><div class="fn-icon">🏟</div><div class="fn-title">Приём площадки</div><div class="fn-sub">ТМ прибывает первым</div></div></div>
+          <div class="farr">→</div>
+          <div class="fn dec"><div class="fn-box"><div class="fn-icon">⚠️</div><div class="fn-title">Все условия?</div><div class="fn-sub">ковролин, барьеры, скорая</div></div></div>
+          <div class="fbr"><span style="font-size:8px;color:var(--b1)">ДА →</span><span style="font-size:8px;color:var(--b3)">НЕТ ✕</span></div>
+          <div class="fn"><div class="fn-box"><div class="fn-icon">🎵</div><div class="fn-title">Саундчек</div><div class="fn-sub">строго по тайм-листу</div></div></div>
+          <div class="farr">→</div>
+          <div class="fn"><div class="fn-box"><div class="fn-icon">🎤</div><div class="fn-title">Шоу</div><div class="fn-sub">ТМ за кулисами</div></div></div>
+          <div class="farr">→</div>
+          <div class="fn end"><div class="fn-box"><div class="fn-icon">🚐</div><div class="fn-title">Выезд</div><div class="fn-sub">охрана сопровождает</div><div class="fn-res">→ Блок 3</div></div></div>
+        </div></div>
+
+        <div class="sec" id="s-2-1"><div class="sh" onclick="ts('s-2-1')"><div class="six">2.1</div><div class="stitle" contenteditable="false">Утро — подъём и выезд на площадку</div><div class="srole role-tm">тур-менеджер</div><div class="sarr">▼</div></div><div class="sb"><div class="reg"><p contenteditable="false">ТМ лично будит каждого участника (звонок/стук), убеждается что встали. Тайминг выезда — с запасом на форс-мажор. Технический персонал выехал первым. У ТМ всегда есть деньги на такси. Завтрак организован по меню — не фастфуд, не бизнес-ланч.</p></div></div></div>
+
+        <div class="sec" id="s-2-2"><div class="sh" onclick="ts('s-2-2')"><div class="six">2.2</div><div class="stitle" contenteditable="false">Приём площадки — проверка ТМ</div><div class="srole role-tm">тур-менеджер</div><div class="sarr">▼</div></div><div class="sb"><div class="reg"><p contenteditable="false">ТМ прибывает на площадку раньше коллектива. Проверяет гримёрки, питание, сцену, охрану по чеклисту — лично, до саундчека. Фиксирует все отклонения фото/видео. Организатору направлена информация для встречи техников.</p></div><div class="subs">
+          <div class="sub" id="sub-2-2-1"><div class="sub-h" onclick="tsub('sub-2-2-1')"><div class="sub-dot"></div><div class="sub-t" contenteditable="false">Гримёрка — проверка на месте</div><div class="sub-a">▼</div></div><div class="sub-b"><div class="sub-text" contenteditable="false">Гримёрка артиста закрыта на ключ, ключ у ТМ. Путь от служебного входа до гримёрки и до сцены — проверен лично. Санузел: бумага, мыло, горячая вода, полотенца. Вся еда и напитки согласно райдеру. Cola Zero — <span class="stop">проверить СНОВА: без сахара!</span> Вода без этикеток, крышки открыты. Фото гримёрки «до» сделано.</div></div></div>
+          <div class="sub" id="sub-2-2-2"><div class="sub-h" onclick="tsub('sub-2-2-2')"><div class="sub-dot"></div><div class="sub-t" contenteditable="false">Сцена — проверка перед открытием дверей</div><div class="sub-a">▼</div></div><div class="sub-b"><div class="sub-text" contenteditable="false">Ковролин: весь периметр, надёжно закреплён — <span class="stop">без него нет выступления</span>. Лед-лента: минимум 3 верхних ступени лестницы. Барьеры MOJO стоят без «дырок». Медбригада и скорая на площадке. Микрофоны, бодипаки, инэиры — в гримёрке. Треклисты распечатаны: 3 на сцене, 1 на DJ, 2 на звуке, 1 на свете — проклеены тейпом по периметру. 4 полотенца на диджейке. Стол около сцены: салфетки, тейп, вода, полотенца. CO₂ кнопка на диджейке, лишние заклеены. Дым-машины — максимальная плотность. FOH заклеен чёрным полиэтиленом.</div></div></div>
+          <div class="sub" id="sub-2-2-3"><div class="sub-h" onclick="tsub('sub-2-2-3')"><div class="sub-dot"></div><div class="sub-t" contenteditable="false">Охрана и безопасность</div><div class="sub-a">▼</div></div><div class="sub-b"><div class="sub-text" contenteditable="false">Охранники по постам: у гримёрок, сцены, пультовой, служебного входа. Минимум 15 чел. Снаружи гримёрки артиста — с момента открытия дверей. Брифинг охраны: бэкстейдж только по разрешению ТМ, запрет съёмки — письменно. 100 бутылок воды 0,5л без этикеток, крышки открыты — перед сценой. Для МСК/СПб: рации ≥20 единиц. Машина у служебного выхода готова за 30 мин. до конца шоу.</div></div></div>
+        </div></div></div>
+
+        <div class="sec" id="s-2-3"><div class="sh" onclick="ts('s-2-3')"><div class="six">2.3</div><div class="stitle" contenteditable="false">Саундчек</div><div class="srole role-both">ТМ + тех. персонал</div><div class="sarr">▼</div></div><div class="sb"><div class="reg"><p contenteditable="false">Начинается строго по тайм-листу — срыв сдвигает весь последующий график. Горячее питание в гримёрке до саундчека (не из мини-бара). Инэиры фронтмена — у него. Треклист у звукаря и светача — актуальная версия, без утечек. После саундчека: гримёрка закрыта на ключ, ТМ получает подтверждение от артиста что всё ок.</p></div></div></div>
+
+        <div class="sec" id="s-2-4"><div class="sh" onclick="ts('s-2-4')"><div class="six">2.4</div><div class="stitle" contenteditable="false">Перед выходом на сцену (−30–60 мин.)</div><div class="srole role-tm">тур-менеджер</div><div class="sarr">▼</div></div><div class="sb"><div class="reg"><p contenteditable="false">Артист не выйдет, пока не выполнены все условия безопасности. Cola Zero — проверена ещё раз (второй раз замечание недопустимо). Нет рекламных анимаций/логотипов на экранах. Запрещённые треки диджею Заказчика — переданы под подпись. Гостевая зона организована, посторонние исключены. Ключ от гримёрки — только у фронтмена во время шоу.</p></div></div></div>
+
+        <div class="sec" id="s-2-5"><div class="sh" onclick="ts('s-2-5')"><div class="six">2.5</div><div class="stitle" contenteditable="false">Шоу и выезд</div><div class="srole role-all">все роли</div><div class="sarr">▼</div></div><div class="sb"><div class="reg"><p contenteditable="false">ТМ — в пределах видимости backstage всё шоу. За 10 минут до конца: водители в машинах развёрнуты «носом» к выезду. После шоу: не менее часа свободного времени в гримёрке. Горячее питание доставлено. Все вещи собраны (паспорт, телефон, зарядки, инэиры). Охрана снята только после того, как вся команда вышла с вещами. Техники выезжают первыми. Фото гримёрки «после» — в базу.</p></div></div></div>
+      </div>
+    </div>
+
+    <!-- БЛОК 3 -->
+    <div class="block b3" id="b3">
+      <div class="bh" onclick="tb('b3')">
+        <div class="bnum">3</div>
+        <div class="btitle" contenteditable="false">Post-show</div>
+        <div class="bmeta">закрытие, финансы, разбор</div>
+        <div class="barr">▶</div>
+      </div>
+      <div class="bbody">
+        <div class="flow-wrap"><div class="flow-label">схема процесса</div><div class="flow">
+          <div class="fn start"><div class="fn-box"><div class="fn-icon">🎭</div><div class="fn-title">Шоу завершено</div><div class="fn-sub">выезд с площадки</div></div></div>
+          <div class="farr">→</div>
+          <div class="fn"><div class="fn-box"><div class="fn-icon">💰</div><div class="fn-title">Финальный расчёт</div><div class="fn-sub">остаток гонорара</div></div></div>
+          <div class="farr">→</div>
+          <div class="fn"><div class="fn-box"><div class="fn-icon">🏨</div><div class="fn-title">Выезд из отеля</div><div class="fn-sub">мини-бары проверены</div></div></div>
+          <div class="farr">→</div>
+          <div class="fn"><div class="fn-box"><div class="fn-icon">📝</div><div class="fn-title">Акты</div><div class="fn-sub">в течение 5 дней</div></div></div>
+          <div class="farr">→</div>
+          <div class="fn"><div class="fn-box"><div class="fn-icon">🔁</div><div class="fn-title">Разбор ошибок</div><div class="fn-sub">в течение 48 часов</div></div></div>
+          <div class="farr">→</div>
+          <div class="fn end"><div class="fn-box"><div class="fn-icon">🗄</div><div class="fn-title">Архив закрыт</div><div class="fn-sub">фото, отчёт, КД</div><div class="fn-res">цикл завершён</div></div></div>
+        </div></div>
+
+        <div class="sec" id="s-3-1"><div class="sh" onclick="ts('s-3-1')"><div class="six">3.1</div><div class="stitle" contenteditable="false">День отъезда — выезд из отеля</div><div class="srole role-tm">тур-менеджер</div><div class="sarr">▼</div></div><div class="sb"><div class="reg"><p contenteditable="false">Поздний выезд согласован и подтверждён отелем. ТМ лично будит каждого. Завтрак организован (не фастфуд). Все вещи из номеров собраны. Мини-бары пусты (всё забрали). Счёт при выезде: мини-бар, рум-сервис, прачечная — оплачены Заказчиком. Помощь со спуском багажа — для каждого участника.</p></div></div></div>
+
+        <div class="sec" id="s-3-2"><div class="sh" onclick="ts('s-3-2')"><div class="six">3.2</div><div class="stitle" contenteditable="false">Финансовое закрытие</div><div class="srole role-kd">конц. директор</div><div class="sarr">▼</div></div><div class="sb"><div class="reg"><p contenteditable="false">Остаток гонорара получается согласно договору. Если наличными в день шоу — ТМ фиксирует и немедленно уведомляет КД. Суточные посчитаны корректно — проверить счёт дважды. Если расходы превысили лимиты — дополнительная компенсация запрошена. Расходы ТМ из личных средств возмещаются в течение 10 рабочих дней при наличии документов.</p></div></div></div>
+
+        <div class="sec" id="s-3-3"><div class="sh" onclick="ts('s-3-3')"><div class="six">3.3</div><div class="stitle" contenteditable="false">Закрывающие документы</div><div class="srole role-both">КД + ТМ</div><div class="sarr">▼</div></div><div class="sb"><div class="reg"><p contenteditable="false">Акт сдачи-приёмки — в течение 5 рабочих дней. Если от КД не поступило претензий за 5 дней — акт, подписанный ТМ в одностороннем порядке, считается действительным. Счёт Заказчику выставлен: все статьи расходов, такси, компенсации.</p></div></div></div>
+
+        <div class="sec" id="s-3-4"><div class="sh" onclick="ts('s-3-4')"><div class="six">3.4</div><div class="stitle" contenteditable="false">Разбор ошибок и архив</div><div class="srole role-both">КД + ТМ</div><div class="sarr">▼</div></div><div class="sb"><div class="reg"><p contenteditable="false">Разбор — не позднее 48 часов. Фиксируется: что пошло не по плану, чья зона, как исправить. В архив: фото до/после гримёрки и сцены, видео выступления, тайм-лист с отклонениями, отчёт по выполнению всех трёх райдеров — отправлен КД. Чек-лист актуализирован. Если удачный концерт — фото/видео также сохраняются (не только проблемные).</p></div></div></div>
+      </div>
+    </div>
   </div>
 
-  <div class="tree" id="tree">
+  <!-- ═══════════════ ЧЕК-ЛИСТЫ ═══════════════ -->
+  <div class="tab-panel" id="tab-checks">
+    <div class="ctrls"><div class="ctrls-hint">⚠️ Правило: не доверяй словам организатора — всегда проверяй лично</div></div>
 
-    <!-- ══════════════════════════════════════ БЛОК 0 -->
-    <div class="block b0" id="block-0">
-      <div class="block-head" onclick="toggleBlock('block-0')">
-        <div class="block-num">0</div>
-        <div class="block-title" contenteditable="false">Подготовка сделки</div>
-        <div class="block-meta">от заявки до предоплаты</div>
-        <div class="block-arrow">▶</div>
+    <!-- ЧЛ 1: Подготовка к туру -->
+    <div class="cl-block" id="cl-prep">
+      <div class="cl-progress"><div class="cl-progress-bar" id="pb-prep"></div></div>
+      <div class="cl-head" onclick="tcl('cl-prep')">
+        <div class="cl-ico">📋</div>
+        <div class="cl-title">Подготовка к туру</div>
+        <div class="cl-count" id="cnt-prep">0 / 0</div>
+        <div class="cl-arr">▶</div>
       </div>
-      <div class="block-body">
-
-        <!-- PROCESS FLOW -->
-        <div class="flow-wrap">
-          <div class="flow-label">схема процесса</div>
-          <div class="flow">
-
-            <div class="fnode start">
-              <div class="fnode-box">
-                <div class="fnode-icon">📥</div>
-                <div class="fnode-title">Входящая заявка</div>
-                <div class="fnode-sub">через официальный канал</div>
-              </div>
-            </div>
-
-            <div class="farrow">→</div>
-
-            <div class="fnode decision">
-              <div class="fnode-box">
-                <div class="fnode-icon">🔍</div>
-                <div class="fnode-title">Квалификация</div>
-                <div class="fnode-sub">бюджет, дата, формат</div>
-              </div>
-            </div>
-
-            <div class="farrow" style="flex-direction:column;gap:2px;">
-              <span style="font-size:8px;color:var(--b1)">ДА →</span>
-              <span style="font-size:8px;color:var(--b3)">НЕТ ✕</span>
-            </div>
-
-            <div class="fnode">
-              <div class="fnode-box">
-                <div class="fnode-icon">💬</div>
-                <div class="fnode-title">Переговоры</div>
-                <div class="fnode-sub">гонорар, условия, состав, дата</div>
-              </div>
-            </div>
-
-            <div class="farrow">→</div>
-
-            <div class="fnode">
-              <div class="fnode-box">
-                <div class="fnode-icon">📋</div>
-                <div class="fnode-title">Согласование с артистом</div>
-                <div class="fnode-sub">финальное одобрение условий</div>
-              </div>
-            </div>
-
-            <div class="farrow">→</div>
-
-            <div class="fnode">
-              <div class="fnode-box">
-                <div class="fnode-icon">✍️</div>
-                <div class="fnode-title">Договор + райдеры</div>
-                <div class="fnode-sub">подписание двух сторон</div>
-              </div>
-            </div>
-
-            <div class="farrow">→</div>
-
-            <div class="fnode">
-              <div class="fnode-box">
-                <div class="fnode-icon">💳</div>
-                <div class="fnode-title">Предоплата</div>
-                <div class="fnode-sub">поступление на счёт</div>
-              </div>
-            </div>
-
-            <div class="farrow">→</div>
-
-            <div class="fnode end">
-              <div class="fnode-box">
-                <div class="fnode-icon">📅</div>
-                <div class="fnode-title">Бронь даты</div>
-                <div class="fnode-sub">бриф → тур-менеджеру</div>
-                <div class="fnode-result">→ Блок 1</div>
-              </div>
-            </div>
-
-          </div>
+      <div class="cl-body">
+        <div class="cl-group">
+          <div class="cl-group-title">Документы</div>
+          <div class="cl-item"><div class="cl-cb"><input type="checkbox" id="c1"><label for="c1"></label></div><div class="cl-item-text">Все договоры с организаторами подписаны и сохранены</div></div>
+          <div class="cl-item"><div class="cl-cb"><input type="checkbox" id="c2"><label for="c2"></label></div><div class="cl-item-text">Актуальная версия бытового и технического райдера — в PDF, отправлена организаторам</div></div>
+          <div class="cl-item"><div class="cl-cb"><input type="checkbox" id="c3"><label for="c3"></label></div><div class="cl-item-text">Световой и все прочие райдеры актуализированы и отправлены</div></div>
+          <div class="cl-item"><div class="cl-cb"><input type="checkbox" id="c4"><label for="c4"></label></div><div class="cl-item-text">Паспортные данные всех членов коллектива — собраны</div></div>
+          <div class="cl-item"><div class="cl-cb"><input type="checkbox" id="c5"><label for="c5"></label></div><div class="cl-item-text">Все инструменты (Word, Google Docs, TG, почта) — работают, лицензии активны</div></div>
         </div>
-
-        <!-- SECTIONS -->
-        <div class="section" id="s-0-1">
-          <div class="section-head" onclick="toggleSection('s-0-1')">
-            <div class="section-idx">0.1</div>
-            <div class="section-title" contenteditable="false">Приём заявки и квалификация</div>
-            <div class="section-role role-kd">конц. директор</div>
-            <div class="section-arrow">▼</div>
-          </div>
-          <div class="section-body">
-            <div class="reglament">
-              <p contenteditable="false">Все запросы — только через официальные каналы агентства. Артист переадресует прямые обращения КД. Срок реакции — не позднее 24 часов. Даже если решение ещё не принято — подтвердить получение.</p>
-            </div>
-            <div class="subs">
-              <div class="sub" id="sub-0-1-1">
-                <div class="sub-head" onclick="toggleSub('sub-0-1-1')">
-                  <div class="sub-bullet"></div>
-                  <div class="sub-title" contenteditable="false">Что выяснить при первом контакте</div>
-                  <div class="sub-arrow">▼</div>
-                </div>
-                <div class="sub-body">
-                  <div class="sub-text" contenteditable="false">По заказчику: кто обращается (организатор или посредник), откуда знает контакты агентства, какие мероприятия проводил ранее.<br><br>По мероприятию: формат (концерт / клабшоу / корпоратив / фестиваль), город, дата, площадка, ожидаемое количество зрителей.<br><br>По бюджету: хотя бы вилка. Если заказчик категорически отказывается называть бюджет — сигнал для осторожности.</div>
-                </div>
-              </div>
-              <div class="sub" id="sub-0-1-2">
-                <div class="sub-head" onclick="toggleSub('sub-0-1-2')">
-                  <div class="sub-bullet"></div>
-                  <div class="sub-title" contenteditable="false">Стоп-сигналы → вежливый отказ</div>
-                  <div class="sub-arrow">▼</div>
-                </div>
-                <div class="sub-body">
-                  <div class="sub-text" contenteditable="false"><span class="stop">✕</span> Заказчик не раскрывает бюджет вообще<br><span class="stop">✕</span> Дата менее 14 дней от текущей<br><span class="stop">✕</span> Формат противоречит текущей политике артиста<br><span class="stop">✕</span> Площадка или страна под ограничениями</div>
-                </div>
-              </div>
-            </div>
-          </div>
+        <div class="cl-group">
+          <div class="cl-group-title">Авиа</div>
+          <div class="cl-item"><div class="cl-cb"><input type="checkbox" id="c6"><label for="c6"></label></div><div class="cl-item-text">Билеты забронированы на весь известный состав</div></div>
+          <div class="cl-item"><div class="cl-cb"><input type="checkbox" id="c7"><label for="c7"></label></div><div class="cl-item-text">Спецпитание заказано (для тех, у кого есть требования)</div></div>
+          <div class="cl-item"><div class="cl-cb"><input type="checkbox" id="c8"><label for="c8"></label></div><div class="cl-item-text">Бонусные карты всех участников введены в билеты</div></div>
         </div>
-
-        <div class="section" id="s-0-2">
-          <div class="section-head" onclick="toggleSection('s-0-2')">
-            <div class="section-idx">0.2</div>
-            <div class="section-title" contenteditable="false">Переговоры и согласование условий</div>
-            <div class="section-role role-kd">конц. директор</div>
-            <div class="section-arrow">▼</div>
-          </div>
-          <div class="section-body">
-            <div class="reglament">
-              <p contenteditable="false">Главный переговорный этап, 2–7 дней. Все принципиальные договорённости — только письменно. Устные договорённости не являются основанием для начала подготовки. КД руководствуется принципом наилучшего предложения для артиста.</p>
-            </div>
-          </div>
+        <div class="cl-group">
+          <div class="cl-group-title">Отель</div>
+          <div class="cl-item"><div class="cl-cb"><input type="checkbox" id="c9"><label for="c9"></label></div><div class="cl-item-text">Отели забронированы, соответствие бытовому райдеру проверено</div></div>
+          <div class="cl-item"><div class="cl-cb"><input type="checkbox" id="c10"><label for="c10"></label></div><div class="cl-item-text">Накануне заезда — представитель проверил отель на строительный шум</div></div>
+          <div class="cl-item"><div class="cl-cb"><input type="checkbox" id="c11"><label for="c11"></label></div><div class="cl-item-text">Ранний заезд / поздний выезд — оплачены и подтверждены</div></div>
+          <div class="cl-item"><div class="cl-cb"><input type="checkbox" id="c12"><label for="c12"></label></div><div class="cl-item-text">Депозит по номерам внесён Заказчиком до приезда коллектива</div></div>
         </div>
-
-        <div class="section" id="s-0-3">
-          <div class="section-head" onclick="toggleSection('s-0-3')">
-            <div class="section-idx">0.3</div>
-            <div class="section-title" contenteditable="false">Договор и предоплата</div>
-            <div class="section-role role-kd">конц. директор</div>
-            <div class="section-arrow">▼</div>
-          </div>
-          <div class="section-body">
-            <div class="reglament">
-              <p contenteditable="false">Договор направляется заказчику не позднее 48 часов после финального согласования. Оба райдера — неотъемлемые приложения к договору. Поступление предоплаты — единственный триггер перехода в Блок 1. До этого дата не считается забронированной.</p>
-            </div>
-          </div>
+        <div class="cl-group">
+          <div class="cl-group-title">Трансфер и коллектив</div>
+          <div class="cl-item"><div class="cl-cb"><input type="checkbox" id="c13"><label for="c13"></label></div><div class="cl-item-text">Трансфер из аэропорта (Maybach + V-класс) подтверждён, водители оплачены</div></div>
+          <div class="cl-item"><div class="cl-cb"><input type="checkbox" id="c14"><label for="c14"></label></div><div class="cl-item-text">Трансфер на площадку и обратно подтверждён</div></div>
+          <div class="cl-item"><div class="cl-cb"><input type="checkbox" id="c15"><label for="c15"></label></div><div class="cl-item-text">Всем членам коллектива разосланы тайминги и вводная информация</div></div>
+          <div class="cl-item"><div class="cl-cb"><input type="checkbox" id="c16"><label for="c16"></label></div><div class="cl-item-text">Схема расстановки охраны и контакт начальника СБ получены (не позднее 5 дней до)</div></div>
         </div>
-
-        <div class="section" id="s-0-4">
-          <div class="section-head" onclick="toggleSection('s-0-4')">
-            <div class="section-idx">0.4</div>
-            <div class="section-title" contenteditable="false">Фиксация и передача тур-менеджеру</div>
-            <div class="section-role role-both">КД → ТМ</div>
-            <div class="section-arrow">▼</div>
-          </div>
-          <div class="section-body">
-            <div class="reglament">
-              <p contenteditable="false">В день поступления предоплаты: дата вносится в мастер-расписание, создаётся папка мероприятия, тур-менеджер получает передаточный бриф. С момента отправки брифа операционная ответственность переходит к ТМ.</p>
-            </div>
-          </div>
-        </div>
-
+        <div class="cl-reset"><button class="cl-reset-btn" onclick="resetCL('cl-prep')">сбросить чек-лист</button></div>
       </div>
     </div>
 
-    <!-- ══════════════════════════════════════ БЛОК 1 -->
-    <div class="block b1" id="block-1">
-      <div class="block-head" onclick="toggleBlock('block-1')">
-        <div class="block-num">1</div>
-        <div class="block-title" contenteditable="false">Pre-show</div>
-        <div class="block-meta">от получения брифа до дня выезда</div>
-        <div class="block-arrow">▶</div>
+    <!-- ЧЛ 2: День вылета -->
+    <div class="cl-block" id="cl-fly">
+      <div class="cl-progress"><div class="cl-progress-bar" id="pb-fly"></div></div>
+      <div class="cl-head" onclick="tcl('cl-fly')">
+        <div class="cl-ico">✈️</div>
+        <div class="cl-title">День вылета</div>
+        <div class="cl-count" id="cnt-fly">0 / 0</div>
+        <div class="cl-arr">▶</div>
       </div>
-      <div class="block-body">
-
-        <div class="flow-wrap">
-          <div class="flow-label">схема процесса</div>
-          <div class="flow">
-
-            <div class="fnode start">
-              <div class="fnode-box">
-                <div class="fnode-icon">📨</div>
-                <div class="fnode-title">Бриф от КД</div>
-                <div class="fnode-sub">предоплата получена</div>
-              </div>
-            </div>
-
-            <div class="farrow">→</div>
-
-            <div class="fnode">
-              <div class="fnode-box">
-                <div class="fnode-icon">✈️</div>
-                <div class="fnode-title">Логистика</div>
-                <div class="fnode-sub">авиа, отель, трансферы</div>
-              </div>
-            </div>
-
-            <div class="farrow">→</div>
-
-            <div class="fnode">
-              <div class="fnode-box">
-                <div class="fnode-icon">📄</div>
-                <div class="fnode-title">Райдеры</div>
-                <div class="fnode-sub">контроль исполнения</div>
-              </div>
-            </div>
-
-            <div class="farrow">→</div>
-
-            <div class="fnode">
-              <div class="fnode-box">
-                <div class="fnode-icon">👥</div>
-                <div class="fnode-title">Команда</div>
-                <div class="fnode-sub">состав, брифинг, роли</div>
-              </div>
-            </div>
-
-            <div class="farrow">→</div>
-
-            <div class="fnode">
-              <div class="fnode-box">
-                <div class="fnode-icon">🎟</div>
-                <div class="fnode-title">Документы</div>
-                <div class="fnode-sub">акреды, гости, пресса</div>
-              </div>
-            </div>
-
-            <div class="farrow">→</div>
-
-            <div class="fnode decision">
-              <div class="fnode-box">
-                <div class="fnode-icon">✅</div>
-                <div class="fnode-title">Всё закрыто?</div>
-                <div class="fnode-sub">финальная сверка за 24 ч</div>
-              </div>
-            </div>
-
-            <div class="farrow" style="flex-direction:column;gap:2px;">
-              <span style="font-size:8px;color:var(--b1)">ДА →</span>
-              <span style="font-size:8px;color:var(--b3)">НЕТ ↺</span>
-            </div>
-
-            <div class="fnode end">
-              <div class="fnode-box">
-                <div class="fnode-icon">🚀</div>
-                <div class="fnode-title">Финальный бриф</div>
-                <div class="fnode-sub">рассылка команде</div>
-                <div class="fnode-result">→ Блок 2</div>
-              </div>
-            </div>
-
-          </div>
+      <div class="cl-body">
+        <div class="cl-group">
+          <div class="cl-group-title">Перед вылетом</div>
+          <div class="cl-item"><div class="cl-cb"><input type="checkbox" id="f1"><label for="f1"></label></div><div class="cl-item-text">Каждому участнику отправлено напоминание: «Проверь паспорт перед выездом»</div></div>
+          <div class="cl-item"><div class="cl-cb"><input type="checkbox" id="f2"><label for="f2"></label></div><div class="cl-item-text">Все билеты проверены: правильные паспортные данные, правильные места</div></div>
+          <div class="cl-item"><div class="cl-cb"><input type="checkbox" id="f3"><label for="f3"></label></div><div class="cl-item-text">Посадочные получены и разосланы участникам в TG</div></div>
+          <div class="cl-item"><div class="cl-cb"><input type="checkbox" id="f4"><label for="f4"></label></div><div class="cl-item-text">Все члены коллектива разбужены и подтвердили готовность к выезду</div></div>
+          <div class="cl-item"><div class="cl-cb"><input type="checkbox" id="f5"><label for="f5"></label></div><div class="cl-item-text">Трансфер в аэропорт подтверждён, время выезда с запасом</div></div>
+          <div class="cl-item"><div class="cl-cb"><input type="checkbox" id="f6"><label for="f6"></label></div><div class="cl-item-text">В наземном транспорте: вода «Святой Источник» + Cola Zero без сахара — <span class="cl-warn">⚠️ проверить лично</span></div></div>
+          <div class="cl-item"><div class="cl-cb"><input type="checkbox" id="f7"><label for="f7"></label></div><div class="cl-item-text">Технические специалисты выехали раньше основного коллектива</div></div>
+          <div class="cl-item"><div class="cl-cb"><input type="checkbox" id="f8"><label for="f8"></label></div><div class="cl-item-text">Весь багаж, включая концертный чемодан — проверен и в машине</div></div>
+          <div class="cl-item"><div class="cl-cb"><input type="checkbox" id="f9"><label for="f9"></label></div><div class="cl-item-text">Штатив и съёмочное оборудование взяты — <span class="cl-warn">⚠️ не забыть!</span></div></div>
+          <div class="cl-item"><div class="cl-cb"><input type="checkbox" id="f10"><label for="f10"></label></div><div class="cl-item-text">Инэиры фронтмена при нём / переданы ТМ — не оставлять у DJ</div></div>
         </div>
-
-        <div class="section" id="s-1-1">
-          <div class="section-head" onclick="toggleSection('s-1-1')">
-            <div class="section-idx">1.1</div>
-            <div class="section-title" contenteditable="false">Авиа и наземная логистика</div>
-            <div class="section-role role-tm">тур-менеджер</div>
-            <div class="section-arrow">▼</div>
-          </div>
-          <div class="section-body">
-            <div class="reglament">
-              <p contenteditable="false">Бронируется сразу после получения брифа — не ждать напоминания. Имена строго по загранпаспортам. Финансовая ответственность за пропущенный рейс и опоздание лежит на ТМ. «Со мной никто не связался» — недопустимая позиция.</p>
-            </div>
-            <div class="subs">
-              <div class="sub" id="sub-1-1-1">
-                <div class="sub-head" onclick="toggleSub('sub-1-1-1')">
-                  <div class="sub-bullet"></div>
-                  <div class="sub-title" contenteditable="false">Перелёты</div>
-                  <div class="sub-arrow">▼</div>
-                </div>
-                <div class="sub-body">
-                  <div class="sub-text" contenteditable="false">Имена строго по загранпаспортам — скриншот каждого билета в TG. Доп. багаж, Sky Priority / Fast Track — оплачены и подтверждены. Бонусные карты внесены в билеты. ТМ не уходит, пока последний участник не зашёл в зону вылета.</div>
-                </div>
-              </div>
-              <div class="sub" id="sub-1-1-2">
-                <div class="sub-head" onclick="toggleSub('sub-1-1-2')">
-                  <div class="sub-bullet"></div>
-                  <div class="sub-title" contenteditable="false">Наземный транспорт</div>
-                  <div class="sub-arrow">▼</div>
-                </div>
-                <div class="sub-body">
-                  <div class="sub-text" contenteditable="false">Машины премиум-класса. В салоне: вода «Святой Источник» без газа + Cola Zero без сахара — проверить лично. Кондиционер настроен до посадки. Водители предупреждаются лично, не через организаторов. Технический персонал — отдельная машина, выезжают раньше коллектива.</div>
-                </div>
-              </div>
-            </div>
-          </div>
+        <div class="cl-group">
+          <div class="cl-group-title">В аэропорту</div>
+          <div class="cl-item"><div class="cl-cb"><input type="checkbox" id="f11"><label for="f11"></label></div><div class="cl-item-text">Sky Priority / Fast Track активирован (если требуется)</div></div>
+          <div class="cl-item"><div class="cl-cb"><input type="checkbox" id="f12"><label for="f12"></label></div><div class="cl-item-text">Доп. багаж оплачен, квитанция есть</div></div>
+          <div class="cl-item"><div class="cl-cb"><input type="checkbox" id="f13"><label for="f13"></label></div><div class="cl-item-text">Каждый участник прошёл регистрацию / паспортный контроль — ТМ отслеживает</div></div>
+          <div class="cl-item"><div class="cl-cb"><input type="checkbox" id="f14"><label for="f14"></label></div><div class="cl-item-text">ТМ не уходит, пока последний участник не зашёл в зону вылета</div></div>
         </div>
-
-        <div class="section" id="s-1-2">
-          <div class="section-head" onclick="toggleSection('s-1-2')">
-            <div class="section-idx">1.2</div>
-            <div class="section-title" contenteditable="false">Отель — подготовка до приезда</div>
-            <div class="section-role role-tm">тур-менеджер</div>
-            <div class="section-arrow">▼</div>
-          </div>
-          <div class="section-body">
-            <div class="reglament">
-              <p contenteditable="false">За неделю до приезда — подтверждение брони. Ключ-карты готовы до приезда — получение через очередь на стойке недопустимо. Из номера фронтмена убираются все «комплименты» от отеля.</p>
-            </div>
-          </div>
-        </div>
-
-        <div class="section" id="s-1-3">
-          <div class="section-head" onclick="toggleSection('s-1-3')">
-            <div class="section-idx">1.3</div>
-            <div class="section-title" contenteditable="false">Контроль исполнения райдеров</div>
-            <div class="section-role role-tm">тур-менеджер</div>
-            <div class="section-arrow">▼</div>
-          </div>
-          <div class="section-body">
-            <div class="reglament">
-              <p contenteditable="false">ТМ несёт полную личную ответственность за бытовой райдер. По техническому и световому — надзорно-организационная: контролирует, фиксирует, докладывает КД. Самостоятельно технику не исправляет. Не доверяй словам организатора — всё проверяется лично.</p>
-            </div>
-          </div>
-        </div>
-
+        <div class="cl-reset"><button class="cl-reset-btn" onclick="resetCL('cl-fly')">сбросить чек-лист</button></div>
       </div>
     </div>
 
-    <!-- ══════════════════════════════════════ БЛОК 2 -->
-    <div class="block b2" id="block-2">
-      <div class="block-head" onclick="toggleBlock('block-2')">
-        <div class="block-num">2</div>
-        <div class="block-title" contenteditable="false">Day of show</div>
-        <div class="block-meta">прибытие → шоу → выезд</div>
-        <div class="block-arrow">▶</div>
+    <!-- ЧЛ 3: День приезда -->
+    <div class="cl-block" id="cl-arrive">
+      <div class="cl-progress"><div class="cl-progress-bar" id="pb-arrive"></div></div>
+      <div class="cl-head" onclick="tcl('cl-arrive')">
+        <div class="cl-ico">🏨</div>
+        <div class="cl-title">День приезда</div>
+        <div class="cl-count" id="cnt-arrive">0 / 0</div>
+        <div class="cl-arr">▶</div>
       </div>
-      <div class="block-body">
-
-        <div class="flow-wrap">
-          <div class="flow-label">схема процесса</div>
-          <div class="flow">
-
-            <div class="fnode start">
-              <div class="fnode-box">
-                <div class="fnode-icon">🌅</div>
-                <div class="fnode-title">Подъём команды</div>
-                <div class="fnode-sub">ТМ будит лично каждого</div>
-              </div>
-            </div>
-
-            <div class="farrow">→</div>
-
-            <div class="fnode">
-              <div class="fnode-box">
-                <div class="fnode-icon">🚗</div>
-                <div class="fnode-title">Выезд техников</div>
-                <div class="fnode-sub">раньше коллектива</div>
-              </div>
-            </div>
-
-            <div class="farrow">→</div>
-
-            <div class="fnode">
-              <div class="fnode-box">
-                <div class="fnode-icon">🏟</div>
-                <div class="fnode-title">Приём площадки</div>
-                <div class="fnode-sub">ТМ прибывает первым</div>
-              </div>
-            </div>
-
-            <div class="farrow">→</div>
-
-            <div class="fnode decision">
-              <div class="fnode-box">
-                <div class="fnode-icon">⚠️</div>
-                <div class="fnode-title">Все условия выполнены?</div>
-                <div class="fnode-sub">ковролин, барьеры, скорая</div>
-              </div>
-            </div>
-
-            <div class="farrow" style="flex-direction:column;gap:2px;">
-              <span style="font-size:8px;color:var(--b1)">ДА →</span>
-              <span style="font-size:8px;color:var(--b3)">НЕТ ✕</span>
-            </div>
-
-            <div class="fnode">
-              <div class="fnode-box">
-                <div class="fnode-icon">🎵</div>
-                <div class="fnode-title">Саундчек</div>
-                <div class="fnode-sub">по тайм-листу</div>
-              </div>
-            </div>
-
-            <div class="farrow">→</div>
-
-            <div class="fnode">
-              <div class="fnode-box">
-                <div class="fnode-icon">🎤</div>
-                <div class="fnode-title">Шоу</div>
-                <div class="fnode-sub">ТМ за кулисами</div>
-              </div>
-            </div>
-
-            <div class="farrow">→</div>
-
-            <div class="fnode end">
-              <div class="fnode-box">
-                <div class="fnode-icon">🚐</div>
-                <div class="fnode-title">Выезд</div>
-                <div class="fnode-sub">охрана до машины</div>
-                <div class="fnode-result">→ Блок 3</div>
-              </div>
-            </div>
-
-          </div>
+      <div class="cl-body">
+        <div class="cl-group">
+          <div class="cl-group-title">Трансфер и встреча</div>
+          <div class="cl-item"><div class="cl-cb"><input type="checkbox" id="a1"><label for="a1"></label></div><div class="cl-item-text">Машины подтверждены: класс, тайминг — позвонить водителям лично</div></div>
+          <div class="cl-item"><div class="cl-cb"><input type="checkbox" id="a2"><label for="a2"></label></div><div class="cl-item-text">В машинах: нужная температура, кондиционер настроен, чисто</div></div>
+          <div class="cl-item"><div class="cl-cb"><input type="checkbox" id="a3"><label for="a3"></label></div><div class="cl-item-text">Техникам обеспечены: туалет, место, вода / Red Bull, горячий обед</div></div>
         </div>
-
-        <div class="section" id="s-2-1">
-          <div class="section-head" onclick="toggleSection('s-2-1')">
-            <div class="section-idx">2.1</div>
-            <div class="section-title" contenteditable="false">Утро — подъём и выезд на площадку</div>
-            <div class="section-role role-tm">тур-менеджер</div>
-            <div class="section-arrow">▼</div>
-          </div>
-          <div class="section-body">
-            <div class="reglament">
-              <p contenteditable="false">ТМ лично будит каждого участника (звонок/стук), убеждается что встали. Тайминг выезда установлен ТМ самостоятельно с запасом на форс-мажор. Технический персонал выехал первым. Артист не выходит самостоятельно — за ним приходят и забирают лично.</p>
-            </div>
-          </div>
+        <div class="cl-group">
+          <div class="cl-group-title">Заселение в отель</div>
+          <div class="cl-item"><div class="cl-cb"><input type="checkbox" id="a4"><label for="a4"></label></div><div class="cl-item-text">Встреча коллектива, сопровождение до номеров</div></div>
+          <div class="cl-item"><div class="cl-cb"><input type="checkbox" id="a5"><label for="a5"></label></div><div class="cl-item-text">Раздача ключ-карт — ТМ фиксирует у кого что</div></div>
+          <div class="cl-item"><div class="cl-cb"><input type="checkbox" id="a6"><label for="a6"></label></div><div class="cl-item-text">Проверка номера фронтмена: нет запахов, нормальная температура, нет шума</div></div>
+          <div class="cl-item"><div class="cl-cb"><input type="checkbox" id="a7"><label for="a7"></label></div><div class="cl-item-text">Розданы суточные — факт зафиксирован</div></div>
+          <div class="cl-item"><div class="cl-cb"><input type="checkbox" id="a8"><label for="a8"></label></div><div class="cl-item-text">Тайминг следующего дня разослан всем участникам письменно</div></div>
         </div>
-
-        <div class="section" id="s-2-2">
-          <div class="section-head" onclick="toggleSection('s-2-2')">
-            <div class="section-idx">2.2</div>
-            <div class="section-title" contenteditable="false">Приём площадки и проверка</div>
-            <div class="section-role role-tm">тур-менеджер</div>
-            <div class="section-arrow">▼</div>
-          </div>
-          <div class="section-body">
-            <div class="reglament">
-              <p contenteditable="false">ТМ прибывает на площадку раньше коллектива. Проверяет гримёрки, питание, охрану по чеклисту. Фиксирует все отклонения фото/видео. Без ковролина, барьеров и медбригады — выступление не начинается.</p>
-            </div>
-          </div>
+        <div class="cl-group">
+          <div class="cl-group-title">Организационные задачи</div>
+          <div class="cl-item"><div class="cl-cb"><input type="checkbox" id="a9"><label for="a9"></label></div><div class="cl-item-text">Документы распечатаны — Заказчиком, не ТМ на принтере отеля</div></div>
+          <div class="cl-item"><div class="cl-cb"><input type="checkbox" id="a10"><label for="a10"></label></div><div class="cl-item-text">Треклист выслан организаторам в PDF (не ссылка), запрет на распространение напомнен</div></div>
+          <div class="cl-item"><div class="cl-cb"><input type="checkbox" id="a11"><label for="a11"></label></div><div class="cl-item-text">Пригласительные / браслеты / гостевой список — запрос подтверждён</div></div>
+          <div class="cl-item"><div class="cl-cb"><input type="checkbox" id="a12"><label for="a12"></label></div><div class="cl-item-text">Аккредитация прессы / фотографов: утверждена с артистом, портфолио получено</div></div>
         </div>
-
+        <div class="cl-reset"><button class="cl-reset-btn" onclick="resetCL('cl-arrive')">сбросить чек-лист</button></div>
       </div>
     </div>
 
-    <!-- ══════════════════════════════════════ БЛОК 3 -->
-    <div class="block b3" id="block-3">
-      <div class="block-head" onclick="toggleBlock('block-3')">
-        <div class="block-num">3</div>
-        <div class="block-title" contenteditable="false">Post-show</div>
-        <div class="block-meta">закрытие, финансы, разбор</div>
-        <div class="block-arrow">▶</div>
+    <!-- ЧЛ 4: День концерта -->
+    <div class="cl-block" id="cl-show">
+      <div class="cl-progress"><div class="cl-progress-bar" id="pb-show"></div></div>
+      <div class="cl-head" onclick="tcl('cl-show')">
+        <div class="cl-ico">🎤</div>
+        <div class="cl-title">День концерта</div>
+        <div class="cl-count" id="cnt-show">0 / 0</div>
+        <div class="cl-arr">▶</div>
       </div>
-      <div class="block-body">
-
-        <div class="flow-wrap">
-          <div class="flow-label">схема процесса</div>
-          <div class="flow">
-
-            <div class="fnode start">
-              <div class="fnode-box">
-                <div class="fnode-icon">🎭</div>
-                <div class="fnode-title">Шоу завершено</div>
-                <div class="fnode-sub">выезд с площадки</div>
-              </div>
-            </div>
-
-            <div class="farrow">→</div>
-
-            <div class="fnode">
-              <div class="fnode-box">
-                <div class="fnode-icon">💰</div>
-                <div class="fnode-title">Финальный расчёт</div>
-                <div class="fnode-sub">остаток гонорара</div>
-              </div>
-            </div>
-
-            <div class="farrow">→</div>
-
-            <div class="fnode">
-              <div class="fnode-box">
-                <div class="fnode-icon">📝</div>
-                <div class="fnode-title">Акты и документы</div>
-                <div class="fnode-sub">в течение 5 дней</div>
-              </div>
-            </div>
-
-            <div class="farrow">→</div>
-
-            <div class="fnode">
-              <div class="fnode-box">
-                <div class="fnode-icon">🔁</div>
-                <div class="fnode-title">Разбор ошибок</div>
-                <div class="fnode-sub">в течение 48 часов</div>
-              </div>
-            </div>
-
-            <div class="farrow">→</div>
-
-            <div class="fnode end">
-              <div class="fnode-box">
-                <div class="fnode-icon">🗄</div>
-                <div class="fnode-title">Архив</div>
-                <div class="fnode-sub">папка закрыта</div>
-                <div class="fnode-result">цикл завершён</div>
-              </div>
-            </div>
-
-          </div>
+      <div class="cl-body">
+        <div class="cl-group">
+          <div class="cl-group-title">Утро / выезд</div>
+          <div class="cl-item"><div class="cl-cb"><input type="checkbox" id="s1"><label for="s1"></label></div><div class="cl-item-text">Все участники разбужены лично, подтверждён выезд</div></div>
+          <div class="cl-item"><div class="cl-cb"><input type="checkbox" id="s2"><label for="s2"></label></div><div class="cl-item-text">Тайминг выезда установлен ТМ с запасом на форс-мажор</div></div>
+          <div class="cl-item"><div class="cl-cb"><input type="checkbox" id="s3"><label for="s3"></label></div><div class="cl-item-text">Техническая команда выехала РАНЬШЕ коллектива</div></div>
+          <div class="cl-item"><div class="cl-cb"><input type="checkbox" id="s4"><label for="s4"></label></div><div class="cl-item-text">Завтрак организован по меню — не фастфуд</div></div>
+          <div class="cl-item"><div class="cl-cb"><input type="checkbox" id="s5"><label for="s5"></label></div><div class="cl-item-text">Wake-up call от отеля поставлен (дополнительно к звонку ТМ)</div></div>
         </div>
-
-        <div class="section" id="s-3-1">
-          <div class="section-head" onclick="toggleSection('s-3-1')">
-            <div class="section-idx">3.1</div>
-            <div class="section-title" contenteditable="false">Финальный расчёт и документы</div>
-            <div class="section-role role-kd">конц. директор</div>
-            <div class="section-arrow">▼</div>
-          </div>
-          <div class="section-body">
-            <div class="reglament">
-              <p contenteditable="false">Акт сдачи-приёмки составляется и подписывается в течение 5 рабочих дней. Если от артиста/КД не поступило претензий — акт, подписанный ТМ в одностороннем порядке, считается действительным. Расходы ТМ из личных средств возмещаются в течение 10 рабочих дней при наличии подтверждающих документов.</p>
-            </div>
-          </div>
+        <div class="cl-group">
+          <div class="cl-group-title">Приезд на площадку — гримёрка</div>
+          <div class="cl-item"><div class="cl-cb"><input type="checkbox" id="s6"><label for="s6"></label></div><div class="cl-item-text">Гримёрка артиста — отдельная, закрыта на ключ (ключ у ТМ)</div></div>
+          <div class="cl-item"><div class="cl-cb"><input type="checkbox" id="s7"><label for="s7"></label></div><div class="cl-item-text">Санузел: бумага, мыло, горячая вода, полотенца</div></div>
+          <div class="cl-item"><div class="cl-cb"><input type="checkbox" id="s8"><label for="s8"></label></div><div class="cl-item-text">Вода «Святой Источник» 0,5л ×20 — без этикеток, крышки открыты</div></div>
+          <div class="cl-item"><div class="cl-cb"><input type="checkbox" id="s9"><label for="s9"></label></div><div class="cl-item-text"><span class="cl-warn">⚠️ Cola Zero — БЕЗ САХАРА × 5 — ПРОВЕРИТЬ ДВАЖДЫ!</span></div></div>
+          <div class="cl-item"><div class="cl-cb"><input type="checkbox" id="s10"><label for="s10"></label></div><div class="cl-item-text">Red Bull без сахара ×5, ягодная тарелка, орехи, нарезанный лимон</div></div>
+          <div class="cl-item"><div class="cl-cb"><input type="checkbox" id="s11"><label for="s11"></label></div><div class="cl-item-text">Алкоголь по райдеру: Hennessy VSOP, красное сухое вино, водка 0,5, 5 замороженных рюмок</div></div>
+          <div class="cl-item"><div class="cl-cb"><input type="checkbox" id="s12"><label for="s12"></label></div><div class="cl-item-text">Еда фронтмена: постные/веганские блюда (V, Ve метки)</div></div>
+          <div class="cl-item"><div class="cl-cb"><input type="checkbox" id="s13"><label for="s13"></label></div><div class="cl-item-text">4 больших + 4 средних белых полотенца; ролик для одежды; зеркало во весь рост</div></div>
+          <div class="cl-item"><div class="cl-cb"><input type="checkbox" id="s14"><label for="s14"></label></div><div class="cl-item-text">Ножницы, скотч, тейп, штопор, листы А4, зубная нить Oral-B Satin Floss</div></div>
+          <div class="cl-item"><div class="cl-cb"><input type="checkbox" id="s15"><label for="s15"></label></div><div class="cl-item-text">Фото гримёрки «до» сделано — для базы</div></div>
+          <div class="cl-item"><div class="cl-cb"><input type="checkbox" id="s16"><label for="s16"></label></div><div class="cl-item-text">Путь от служебного входа до гримёрки и до сцены проверен лично</div></div>
         </div>
-
-        <div class="section" id="s-3-2">
-          <div class="section-head" onclick="toggleSection('s-3-2')">
-            <div class="section-idx">3.2</div>
-            <div class="section-title" contenteditable="false">Разбор ошибок и архив</div>
-            <div class="section-role role-both">КД + ТМ</div>
-            <div class="section-arrow">▼</div>
-          </div>
-          <div class="section-body">
-            <div class="reglament">
-              <p contenteditable="false">Разбор — не позднее 48 часов после мероприятия. Фиксируется: что пошло не по плану, чья зона ответственности, как исправить в следующий раз. В базу: фото гримёрки до/после, видео выступления, тайм-лист с отклонениями. Чек-лист актуализируется по итогам.</p>
-            </div>
-          </div>
+        <div class="cl-group">
+          <div class="cl-group-title">Сцена — <span class="cl-warn">без этого выступления нет</span></div>
+          <div class="cl-item"><div class="cl-cb"><input type="checkbox" id="s17"><label for="s17"></label></div><div class="cl-item-text"><span class="cl-warn">КРИТИЧНО:</span> Вся сцена покрыта чёрным ковролином (минимум передняя половина), надёжно закреплён</div></div>
+          <div class="cl-item"><div class="cl-cb"><input type="checkbox" id="s18"><label for="s18"></label></div><div class="cl-item-text"><span class="cl-warn">КРИТИЧНО:</span> Лестница освещена лед-лентой — минимум 3 верхних ступени</div></div>
+          <div class="cl-item"><div class="cl-cb"><input type="checkbox" id="s19"><label for="s19"></label></div><div class="cl-item-text"><span class="cl-warn">КРИТИЧНО:</span> Барьеры MOJO перед сценой и пультовой — без «дырок»</div></div>
+          <div class="cl-item"><div class="cl-cb"><input type="checkbox" id="s20"><label for="s20"></label></div><div class="cl-item-text"><span class="cl-warn">КРИТИЧНО:</span> Медбригада и скорая на площадке (≥600 зрителей)</div></div>
+          <div class="cl-item"><div class="cl-cb"><input type="checkbox" id="s21"><label for="s21"></label></div><div class="cl-item-text">Сцена расширена подиумами до ≥6×4 м</div></div>
+          <div class="cl-item"><div class="cl-cb"><input type="checkbox" id="s22"><label for="s22"></label></div><div class="cl-item-text">Микрофоны, бодипаки, инэиры — в гримёрке</div></div>
+          <div class="cl-item"><div class="cl-cb"><input type="checkbox" id="s23"><label for="s23"></label></div><div class="cl-item-text">Треклисты распечатаны и проклеены тейпом: 3 на сцене, 1 на DJ, 2 на звуке, 1 на свете</div></div>
+          <div class="cl-item"><div class="cl-cb"><input type="checkbox" id="s24"><label for="s24"></label></div><div class="cl-item-text">4 средних полотенца на диджейке, стол со столешницей у сцены (салфетки, тейп, вода)</div></div>
+          <div class="cl-item"><div class="cl-cb"><input type="checkbox" id="s25"><label for="s25"></label></div><div class="cl-item-text">CO₂-кнопка на диджейке, лишние заклеены тейпом, тест проведён</div></div>
+          <div class="cl-item"><div class="cl-cb"><input type="checkbox" id="s26"><label for="s26"></label></div><div class="cl-item-text">Дым-машины запущены — максимальная плотность подтверждена</div></div>
+          <div class="cl-item"><div class="cl-cb"><input type="checkbox" id="s27"><label for="s27"></label></div><div class="cl-item-text">FOH заклеен чёрным полиэтиленом, провода убраны, электробезопасность проверена</div></div>
+          <div class="cl-item"><div class="cl-cb"><input type="checkbox" id="s28"><label for="s28"></label></div><div class="cl-item-text">Нет рекламных анимаций/логотипов на экранах</div></div>
+          <div class="cl-item"><div class="cl-cb"><input type="checkbox" id="s29"><label for="s29"></label></div><div class="cl-item-text">Штатив для технической съёмки — взят и установлен</div></div>
         </div>
-
+        <div class="cl-group">
+          <div class="cl-group-title">Охрана и безопасность</div>
+          <div class="cl-item"><div class="cl-cb"><input type="checkbox" id="s30"><label for="s30"></label></div><div class="cl-item-text">Охранники по постам: у гримёрок, сцены, пультовой, служебного входа (min 15 чел.)</div></div>
+          <div class="cl-item"><div class="cl-cb"><input type="checkbox" id="s31"><label for="s31"></label></div><div class="cl-item-text">Охрана проинструктирована: бэкстейдж — только по разрешению ТМ, письменный брифинг</div></div>
+          <div class="cl-item"><div class="cl-cb"><input type="checkbox" id="s32"><label for="s32"></label></div><div class="cl-item-text">100 бутылок воды 0,5л без этикеток, крышки открыты — перед сценой</div></div>
+          <div class="cl-item"><div class="cl-cb"><input type="checkbox" id="s33"><label for="s33"></label></div><div class="cl-item-text">Машина у служебного выхода готова не позднее 30 мин. после начала шоу</div></div>
+          <div class="cl-item"><div class="cl-cb"><input type="checkbox" id="s34"><label for="s34"></label></div><div class="cl-item-text">Запрещённые треки — переданы диджею Заказчика под подпись</div></div>
+          <div class="cl-item"><div class="cl-cb"><input type="checkbox" id="s35"><label for="s35"></label></div><div class="cl-item-text">Гостевая зона (VIP/backstage) организована, посторонние зрители исключены</div></div>
+        </div>
+        <div class="cl-group">
+          <div class="cl-group-title">Саундчек</div>
+          <div class="cl-item"><div class="cl-cb"><input type="checkbox" id="s36"><label for="s36"></label></div><div class="cl-item-text">Горячее питание на саундчек заказано и доставлено в гримёрку (не из мини-бара)</div></div>
+          <div class="cl-item"><div class="cl-cb"><input type="checkbox" id="s37"><label for="s37"></label></div><div class="cl-item-text">Инэиры фронтмена — у него на саундчеке</div></div>
+          <div class="cl-item"><div class="cl-cb"><input type="checkbox" id="s38"><label for="s38"></label></div><div class="cl-item-text">Треклист у звукаря и светача — актуальная версия, без утечек</div></div>
+          <div class="cl-item"><div class="cl-cb"><input type="checkbox" id="s39"><label for="s39"></label></div><div class="cl-item-text">По итогам саундчека: всё ок подтверждено с артистом, гримёрка закрыта на ключ</div></div>
+        </div>
+        <div class="cl-group">
+          <div class="cl-group-title">Во время и после выступления</div>
+          <div class="cl-item"><div class="cl-cb"><input type="checkbox" id="s40"><label for="s40"></label></div><div class="cl-item-text">ТМ находится в пределах видимости backstage всё шоу</div></div>
+          <div class="cl-item"><div class="cl-cb"><input type="checkbox" id="s41"><label for="s41"></label></div><div class="cl-item-text">После шоу: не менее часа свободного времени в гримёрке</div></div>
+          <div class="cl-item"><div class="cl-cb"><input type="checkbox" id="s42"><label for="s42"></label></div><div class="cl-item-text">Горячее питание после шоу: доставлено в гримёрку или согласовано в отеле</div></div>
+          <div class="cl-item"><div class="cl-cb"><input type="checkbox" id="s43"><label for="s43"></label></div><div class="cl-item-text">Все вещи коллектива собраны из гримёрки (паспорт, телефон, зарядки, инэиры)</div></div>
+          <div class="cl-item"><div class="cl-cb"><input type="checkbox" id="s44"><label for="s44"></label></div><div class="cl-item-text">Охрана снята после того, как ВСЯ команда покинула гримёрку с вещами</div></div>
+          <div class="cl-item"><div class="cl-cb"><input type="checkbox" id="s45"><label for="s45"></label></div><div class="cl-item-text">Фото гримёрки «после» сделано — для базы</div></div>
+        </div>
+        <div class="cl-reset"><button class="cl-reset-btn" onclick="resetCL('cl-show')">сбросить чек-лист</button></div>
       </div>
     </div>
 
-  </div>
-</div>
+    <!-- ЧЛ 5: Выезд и закрытие -->
+    <div class="cl-block" id="cl-out">
+      <div class="cl-progress"><div class="cl-progress-bar" id="pb-out"></div></div>
+      <div class="cl-head" onclick="tcl('cl-out')">
+        <div class="cl-ico">📦</div>
+        <div class="cl-title">Выезд и закрытие тура</div>
+        <div class="cl-count" id="cnt-out">0 / 0</div>
+        <div class="cl-arr">▶</div>
+      </div>
+      <div class="cl-body">
+        <div class="cl-group">
+          <div class="cl-group-title">Выезд из отеля</div>
+          <div class="cl-item"><div class="cl-cb"><input type="checkbox" id="o1"><label for="o1"></label></div><div class="cl-item-text">Поздний выезд согласован с отелем или расходы ожидания оплачены</div></div>
+          <div class="cl-item"><div class="cl-cb"><input type="checkbox" id="o2"><label for="o2"></label></div><div class="cl-item-text">ТМ лично разбудил каждого участника, убедился что встали</div></div>
+          <div class="cl-item"><div class="cl-cb"><input type="checkbox" id="o3"><label for="o3"></label></div><div class="cl-item-text">Завтрак организован (не фастфуд)</div></div>
+          <div class="cl-item"><div class="cl-cb"><input type="checkbox" id="o4"><label for="o4"></label></div><div class="cl-item-text">Все вещи из номеров собраны, мини-бары пусты</div></div>
+          <div class="cl-item"><div class="cl-cb"><input type="checkbox" id="o5"><label for="o5"></label></div><div class="cl-item-text">Счёт при выезде: мини-бар, рум-сервис, прачечная — оплачены Заказчиком</div></div>
+          <div class="cl-item"><div class="cl-cb"><input type="checkbox" id="o6"><label for="o6"></label></div><div class="cl-item-text">Водители предупреждены лично, весь коллектив в машинах — ТМ считает поимённо</div></div>
+          <div class="cl-item"><div class="cl-cb"><input type="checkbox" id="o7"><label for="o7"></label></div><div class="cl-item-text">Оборудование загружено, грузчики отработали — всё проверено перед отъездом</div></div>
+        </div>
+        <div class="cl-group">
+          <div class="cl-group-title">Аэропорт / вокзал</div>
+          <div class="cl-item"><div class="cl-cb"><input type="checkbox" id="o8"><label for="o8"></label></div><div class="cl-item-text">Посадочные талоны у каждого (онлайн-регистрация пройдена за 24 ч)</div></div>
+          <div class="cl-item"><div class="cl-cb"><input type="checkbox" id="o9"><label for="o9"></label></div><div class="cl-item-text">Имена в билетах строго по загранпаспортам — финальная проверка ТМ</div></div>
+          <div class="cl-item"><div class="cl-cb"><input type="checkbox" id="o10"><label for="o10"></label></div><div class="cl-item-text">Если кто-то забыл вещь в отеле — организовать доставку ДО паспортного контроля</div></div>
+          <div class="cl-item"><div class="cl-cb"><input type="checkbox" id="o11"><label for="o11"></label></div><div class="cl-item-text">ТМ не уходит, пока последний участник не зашёл в зону вылета</div></div>
+        </div>
+        <div class="cl-group">
+          <div class="cl-group-title">Финансы и отчётность</div>
+          <div class="cl-item"><div class="cl-cb"><input type="checkbox" id="o12"><label for="o12"></label></div><div class="cl-item-text">Суточные посчитаны корректно — все дни включены, <span class="cl-warn">⚠️ проверить дважды</span></div></div>
+          <div class="cl-item"><div class="cl-cb"><input type="checkbox" id="o13"><label for="o13"></label></div><div class="cl-item-text">Счёт Заказчику выставлен: все статьи расходов, такси, компенсации</div></div>
+          <div class="cl-item"><div class="cl-cb"><input type="checkbox" id="o14"><label for="o14"></label></div><div class="cl-item-text">Акты и финансовые документы подписаны и переданы</div></div>
+          <div class="cl-item"><div class="cl-cb"><input type="checkbox" id="o15"><label for="o15"></label></div><div class="cl-item-text">Если расходы превысили лимиты бытового райдера — дополнительная компенсация запрошена</div></div>
+          <div class="cl-item"><div class="cl-cb"><input type="checkbox" id="o16"><label for="o16"></label></div><div class="cl-item-text">Остаток суточных Заказчику НЕ возвращается (п. 11.2 райдера)</div></div>
+        </div>
+        <div class="cl-group">
+          <div class="cl-group-title">Разбор и база знаний</div>
+          <div class="cl-item"><div class="cl-cb"><input type="checkbox" id="o17"><label for="o17"></label></div><div class="cl-item-text">Фото ДО/ПОСЛЕ гримёрки и сцены — сохранены в базу</div></div>
+          <div class="cl-item"><div class="cl-cb"><input type="checkbox" id="o18"><label for="o18"></label></div><div class="cl-item-text">Все ошибки / нестандартные ситуации — зафиксированы письменно сразу после</div></div>
+          <div class="cl-item"><div class="cl-cb"><input type="checkbox" id="o19"><label for="o19"></label></div><div class="cl-item-text">Отчёт по выполнению бытового / технического / светового райдера — отправлен КД</div></div>
+          <div class="cl-item"><div class="cl-cb"><input type="checkbox" id="o20"><label for="o20"></label></div><div class="cl-item-text">Чек-лист актуализирован по итогам концерта</div></div>
+          <div class="cl-item"><div class="cl-cb"><input type="checkbox" id="o21"><label for="o21"></label></div><div class="cl-item-text">Обратная связь от КД — получена</div></div>
+        </div>
+        <div class="cl-reset"><button class="cl-reset-btn" onclick="resetCL('cl-out')">сбросить чек-лист</button></div>
+      </div>
+    </div>
+
+  </div><!-- /tab-checks -->
+
+</div><!-- /app -->
 
 <div class="edit-badge">✎ режим редактирования активен</div>
 
 <script>
-// ── PASSWORD ──
-const PASSWORD = '1234';
+const PWD = '1234';
 
-function checkPassword() {
-  const val = document.getElementById('lock-input').value;
-  if (val === PASSWORD) {
-    document.getElementById('lock-screen').style.display = 'none';
-    document.getElementById('app').style.display = 'block';
+// LOCK
+function unlock(){
+  if(document.getElementById('li').value===PWD){
+    document.getElementById('lock').style.display='none';
+    document.getElementById('app').style.display='block';
+    initAllCounts();
   } else {
-    const err = document.getElementById('lock-error');
-    err.classList.add('show');
-    document.getElementById('lock-input').value = '';
-    setTimeout(() => err.classList.remove('show'), 2000);
+    const e=document.getElementById('lerr');
+    e.classList.add('show');
+    document.getElementById('li').value='';
+    setTimeout(()=>e.classList.remove('show'),2000);
   }
 }
-document.getElementById('lock-input').addEventListener('keydown', e => {
-  if (e.key === 'Enter') checkPassword();
-});
+document.getElementById('li').addEventListener('keydown',e=>{ if(e.key==='Enter') unlock(); });
 
-// ── TREE NAVIGATION ──
-function toggleBlock(id) { document.getElementById(id).classList.toggle('open'); }
-function toggleSection(id) { document.getElementById(id).classList.toggle('open'); }
-function toggleSub(id) { document.getElementById(id).classList.toggle('open'); }
-
-let allOpen = false;
-function toggleAll() {
-  allOpen = !allOpen;
-  document.querySelectorAll('.block,.section,.sub').forEach(el => el.classList.toggle('open', allOpen));
-  document.querySelector('[onclick="toggleAll()"]').textContent = allOpen ? 'свернуть все' : 'развернуть все';
+// TABS
+function switchTab(id, el){
+  document.querySelectorAll('.tab-panel').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.nav-tab').forEach(t=>t.classList.remove('active'));
+  document.getElementById('tab-'+id).classList.add('active');
+  el.classList.add('active');
 }
 
-// ── EDIT MODE ──
-let editMode = false;
+// TREE
+function tb(id){ document.getElementById(id).classList.toggle('open'); }
+function ts(id){ document.getElementById(id).classList.toggle('open'); }
+function tsub(id){ document.getElementById(id).classList.toggle('open'); }
 
-function toggleEdit() {
-  editMode = !editMode;
-  document.body.classList.toggle('edit-mode', editMode);
-  document.querySelectorAll('[contenteditable]').forEach(el => {
-    el.contentEditable = editMode ? 'true' : 'false';
-  });
-  document.querySelector('.edit-toggle').textContent = editMode ? '✎ выйти из редактора' : '✎ режим редактора';
+let allOpen=false;
+function expandAll(){
+  allOpen=!allOpen;
+  document.querySelectorAll('.block,.sec,.sub').forEach(el=>el.classList.toggle('open',allOpen));
+  document.querySelector('[onclick="expandAll()"]').textContent=allOpen?'свернуть все':'развернуть все';
 }
 
-// ── SAVE FILE ──
-function saveFile() {
-  // Snapshot current state with edits baked in
-  const clone = document.documentElement.cloneNode(true);
+// CHECKLISTS
+function tcl(id){ document.getElementById(id).classList.toggle('open'); }
 
-  // Lock contenteditable off in saved file
-  clone.querySelectorAll('[contenteditable]').forEach(el => {
-    el.removeAttribute('contenteditable');
+function initAllCounts(){
+  document.querySelectorAll('.cl-block').forEach(cl=>updateCount(cl.id));
+  document.querySelectorAll('.cl-block input[type=checkbox]').forEach(cb=>{
+    cb.addEventListener('change',function(){
+      const cl=this.closest('.cl-block');
+      updateCount(cl.id);
+      const item=this.closest('.cl-item');
+      if(item) item.classList.toggle('checked',this.checked);
+    });
   });
+}
 
-  // Bake the current password into saved file
-  const scripts = clone.querySelectorAll('script');
-  scripts.forEach(s => {
-    if (s.textContent.includes("const PASSWORD")) {
-      s.textContent = s.textContent.replace(/const PASSWORD = '.*?'/, `const PASSWORD = '${PASSWORD}'`);
-    }
-  });
+function updateCount(clId){
+  const cl=document.getElementById(clId);
+  const all=cl.querySelectorAll('input[type=checkbox]');
+  const done=cl.querySelectorAll('input[type=checkbox]:checked');
+  const cnt=cl.querySelector('[id^="cnt-"]');
+  const pb=cl.querySelector('[id^="pb-"]');
+  if(cnt) cnt.textContent=`${done.length} / ${all.length}`;
+  if(pb) pb.style.width=all.length>0?`${(done.length/all.length)*100}%`:'0%';
+}
 
-  const html = '<!DOCTYPE html>\n' + clone.outerHTML;
-  const blob = new Blob([html], { type: 'text/html' });
-  const a = document.createElement('a');
-  a.href = URL.createObjectURL(blob);
-  a.download = 'agency_sop.html';
+function resetCL(clId){
+  const cl=document.getElementById(clId);
+  cl.querySelectorAll('input[type=checkbox]').forEach(cb=>{ cb.checked=false; });
+  cl.querySelectorAll('.cl-item').forEach(i=>i.classList.remove('checked'));
+  updateCount(clId);
+}
+
+// EDIT MODE
+let editMode=false;
+function toggleEdit(){
+  editMode=!editMode;
+  document.body.classList.toggle('edit-mode',editMode);
+  document.querySelectorAll('[contenteditable]').forEach(el=>{ el.contentEditable=editMode?'true':'false'; });
+  document.querySelector('[onclick="toggleEdit()"]').textContent=editMode?'✎ выйти':'✎ редактор';
+}
+
+// SAVE
+function saveFile(){
+  const clone=document.documentElement.cloneNode(true);
+  clone.querySelectorAll('[contenteditable]').forEach(el=>el.removeAttribute('contenteditable'));
+  clone.querySelectorAll('script').forEach(s=>{ if(s.textContent.includes('const PWD')) s.textContent=s.textContent.replace(/const PWD = '.*?'/,`const PWD = '${PWD}'`); });
+  const blob=new Blob(['<!DOCTYPE html>\n'+clone.outerHTML],{type:'text/html'});
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(blob);
+  a.download='agency_sop.html';
   a.click();
   URL.revokeObjectURL(a.href);
 }
